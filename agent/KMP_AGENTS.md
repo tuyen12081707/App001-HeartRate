@@ -123,3 +123,9 @@ Before finalizing code, verify:
 
 # iOS
 ./gradlew iosSimulatorArm64Binaries
+```
+
+---
+
+## 12. Version Control & Commits
+* Always follow the strict GitLab Commit Rules defined in `GIT_COMMIT_RULES.md` when committing code for this project.
