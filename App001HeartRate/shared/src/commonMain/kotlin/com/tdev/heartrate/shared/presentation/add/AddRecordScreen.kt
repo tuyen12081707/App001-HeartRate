@@ -230,7 +230,7 @@ fun AddRecordScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            val isFormValid = uiState.bpm.isNotEmpty() && uiState.bpm.toIntOrNull() in 40..220
+            val isFormValid = uiState.bpm.isNotEmpty() && (uiState.bpm.toIntOrNull() in 40..220) && uiState.bodyState != null
 
             AnimatedPrimaryButton(
                 onClick = { viewModel.onIntent(AddRecordIntent.SaveRecord) },
@@ -327,7 +327,8 @@ fun WheelNumberPicker(
                 val isSelected = index == currentCenteredIndex
                 
                 val scale by animateFloatAsState(if (isSelected) 1.5f else 0.9f)
-                val color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+                val alpha by animateFloatAsState(if (isSelected) 1f else 0.3f)
+                val color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = alpha)
 
                 Box(
                     modifier = Modifier
