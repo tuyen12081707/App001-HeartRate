@@ -1,34 +1,30 @@
-# Task: Refactor Add Record & Result Screens
+# Epic 2: Lịch sử & Đồ thị Nhịp tim (Persistence & Trends)
 
-## Objective
-Xây dựng lại luồng Thêm nhịp tim thủ công (Add Record) và màn hình Hiển thị kết quả (Result Screen). Yêu cầu UI/UX phải hiện đại, có animation mượt mà, và Validate chặt chẽ trước khi chuyển trang.
+Hiện tại các màn hình UI cơ bản (Epic 1) đã hoàn tất. Mục tiêu của Epic 2 là giúp ứng dụng thực sự "sống" bằng cách lưu trữ dữ liệu và vẽ biểu đồ theo dõi sức khoẻ người dùng.
 
-## 1. Màn hình Add Record (`AddRecordScreen.kt`)
-* **BPM Input (Trọng tâm):** KHÔNG dùng `TextField` nhập số nhàm chán. Hãy tự custom một `WheelNumberPicker` (Cuộn số) bằng `LazyColumn` kết hợp với `rememberSnapFlingBehavior` của Compose. 
-  - Dải số cho phép cuộn: từ `40` đến `220` BPM.
-  - Số đang được chọn ở giữa phải to lên (scale lớn hơn) và đổi màu Đỏ chủ đạo, các số xung quanh mờ đi (alpha giảm).
-* **Các input khác:** - Trạng thái đo (Resting, Exercising, After Wake up...): Hiển thị dạng `FilterChip` hoặc các nút bo tròn nằm ngang (Row) để user bấm chọn nhanh.
-* **Validation Logic:**
-  - Nút "Xác nhận / Xem Kết Quả" phải bị `disabled` (mờ đi, không cho bấm) nếu user chưa chọn đủ thông tin (chưa có BPM, chưa chọn Trạng thái).
-  - Khi hợp lệ, nút bấm sáng lên. Bấm vào sẽ lưu vào Database (gọi ViewModel) và điều hướng (Navigate) sang màn Result, truyền theo ID hoặc chỉ số BPM vừa đo.
+## 1. Lưu trữ dữ liệu cục bộ (Local Database)
+* **Công nghệ:** Sử dụng Room (hoặc SQLDelight) hỗ trợ KMP để thiết lập Database.
+* **Mô hình Dữ liệu:** Bảng `HeartRateRecord` (id, bpm, timestamp, status, bodyState).
+* **Tính năng:** Khi người dùng đo xong ở ResultScreen, tự động lưu thông số này vào Database.
 
-## 2. Màn hình Result (`ResultScreen.kt`)
-* **Hero Section (Nổi bật nhất):** - Ở chính giữa màn hình trên cùng, tạo một vòng tròn to (hoặc hình trái tim) có viền Gradient (Đỏ - Cam).
-  - Sử dụng `Animatable` hoặc `animateIntAsState` để tạo hiệu ứng số đếm nhảy từ 0 lên con số BPM thực tế khi màn hình vừa mở lên.
-* **Health Status Indicator:**
-  - Dựa vào chỉ số BPM, hiển thị text đánh giá tình trạng.
-  - Ví dụ: 60-100 -> "Bình thường" (màu Xanh lá). Dưới 60 -> "Hơi thấp" (Màu Xanh dương). Trên 100 -> "Hơi cao" (Màu Cam/Đỏ).
-* **Details Card:** - Một `Card` bo góc 24dp (Glassmorphism hoặc shadow nhẹ) hiển thị lại Ngày giờ đo và Trạng thái đo.
-* **Action Buttons:** - 2 nút ở dưới cùng: Nút Primary (Đỏ) "Về Trang Chủ", Nút Secondary (Outlined) "Đo lại/Thêm mới".
+## 2. Màn hình Lịch sử (`HistoryScreen.kt`)
+* **Giao diện:** 
+  - Một danh sách (LazyColumn) hiển thị tất cả các lần đo trước đó.
+  - Nhóm các lần đo theo ngày (Today, Yesterday...).
+  - Mỗi item trong danh sách hiển thị: Con số BPM, Icon trạng thái (Tim màu xanh/đỏ tuỳ thuộc vào BPM), thời gian đo.
 
-## 3. Màn hình Home - Tích hợp News API (`HomeScreen.kt`)
-* **News Section (Tin tức):** Hiển thị danh sách các bài báo hoặc tin tức về sức khoẻ tại màn hình Home.
-* **API Integration (Ktor):**
-  - Cần setup Ktor Multiplatform Client trong `commonMain`.
-  - Cấu hình plugin `content-negotiation` và `kotlinx-serialization` để parse JSON.
-  - Viết Service gọi API lấy danh sách tin tức (có thể lấy API mock hoặc API news công khai).
-  - Áp dụng Clean Architecture: Viết `NewsRepository` và UseCase để cung cấp `Flow<Result<List<News>>>` hoặc trạng thái State tương ứng.
-* **UI/UX yêu cầu:**
-  - Giao diện dạng danh sách mượt mà, sử dụng `LazyColumn`.
-  - Mỗi item tin tức có hình ảnh cover (sử dụng thư viện load ảnh KMP như Coil3 hoặc Kamel), tiêu đề và mô tả ngắn gọn.
-  - Có trạng thái Loading (Shimmer effect/CircularProgressIndicator) và Error handling (nút Retry khi lỗi mạng).
+## 3. Biểu đồ Đường (Line Chart) trên Màn hình Home
+* **Vị trí:** Thay thế/Nâng cấp phần khoảng trống trên màn hình `HomeScreen`.
+* **Tính năng:**
+  - Vẽ biểu đồ đường (Line Chart) xu hướng nhịp tim trong 7 ngày gần nhất.
+  - Dùng đường cong (Bezier curve) mềm mại.
+  - Nếu có quá ít dữ liệu, hiển thị placeholder "Đo thêm để xem xu hướng sức khoẻ".
+
+## 4. Màn hình Hồ sơ (`ProfileScreen.kt`)
+* **Tính năng:** 
+  - Cho phép người dùng nhập Tuổi, Chiều cao, Cân nặng.
+  - Dựa vào Tuổi để tính toán Mức Nhịp tim Tối đa (Max BPM = 220 - Tuổi).
+  - Giao diện có nút "Dark Mode / Light Mode".
+
+---
+*Lưu ý cho AI: Tiếp tục áp dụng `AUTO_WORKFLOW.md` sau khi hoàn thành từng Task của Epic này.*
