@@ -60,7 +60,7 @@ jobs:
             }')
           
           # 4. Gửi request đến Google Gemini API (Sử dụng model gemini-1.5-pro)
-          RESPONSE=$(curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=$GEMINI_API_KEY" \
+          RESPONSE=$(curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=$GEMINI_API_KEY" \
             -H 'Content-Type: application/json' \
             -d "$PAYLOAD")
           
