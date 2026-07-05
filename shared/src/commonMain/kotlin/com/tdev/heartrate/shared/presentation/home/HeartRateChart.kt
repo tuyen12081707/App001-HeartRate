@@ -65,7 +65,7 @@ fun HeartRateChart(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(140.dp)
+                .height(220.dp)
         ) {
             val width = size.width
             val height = size.height
