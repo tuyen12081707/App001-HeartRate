@@ -20,3 +20,15 @@ Xây dựng lại luồng Thêm nhịp tim thủ công (Add Record) và màn hì
   - Ví dụ: 60-100 -> "Bình thường" (màu Xanh lá). Dưới 60 -> "Hơi thấp" (Màu Xanh dương). Trên 100 -> "Hơi cao" (Màu Cam/Đỏ).
 * **Details Card:** - Một `Card` bo góc 24dp (Glassmorphism hoặc shadow nhẹ) hiển thị lại Ngày giờ đo và Trạng thái đo.
 * **Action Buttons:** - 2 nút ở dưới cùng: Nút Primary (Đỏ) "Về Trang Chủ", Nút Secondary (Outlined) "Đo lại/Thêm mới".
+
+## 3. Màn hình Home - Tích hợp News API (`HomeScreen.kt`)
+* **News Section (Tin tức):** Hiển thị danh sách các bài báo hoặc tin tức về sức khoẻ tại màn hình Home.
+* **API Integration (Ktor):**
+  - Cần setup Ktor Multiplatform Client trong `commonMain`.
+  - Cấu hình plugin `content-negotiation` và `kotlinx-serialization` để parse JSON.
+  - Viết Service gọi API lấy danh sách tin tức (có thể lấy API mock hoặc API news công khai).
+  - Áp dụng Clean Architecture: Viết `NewsRepository` và UseCase để cung cấp `Flow<Result<List<News>>>` hoặc trạng thái State tương ứng.
+* **UI/UX yêu cầu:**
+  - Giao diện dạng danh sách mượt mà, sử dụng `LazyColumn`.
+  - Mỗi item tin tức có hình ảnh cover (sử dụng thư viện load ảnh KMP như Coil3 hoặc Kamel), tiêu đề và mô tả ngắn gọn.
+  - Có trạng thái Loading (Shimmer effect/CircularProgressIndicator) và Error handling (nút Retry khi lỗi mạng).
