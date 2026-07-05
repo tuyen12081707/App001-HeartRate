@@ -47,6 +47,7 @@ val domainModule = module {
     factory { DeleteHeartRateRecordUseCase(get()) }
     factory { GetHeartRateStatsUseCase(get()) }
     factory { GetNewsUseCase(get()) }
+    factory { com.tdev.heartrate.shared.domain.usecase.GetNewsDetailUseCase(get()) }
     single { provideAppDispatchers() }
 }
 
@@ -69,6 +70,7 @@ val presentationModule = module {
     factory { AddRecordViewModel(get()) }
     factory { DashboardViewModel(get()) }
     factory { HomeViewModel(get(), get()) }
+    factory { com.tdev.heartrate.shared.presentation.newsdetail.NewsDetailViewModel(get()) }
 }
 
 expect val platformModule: Module

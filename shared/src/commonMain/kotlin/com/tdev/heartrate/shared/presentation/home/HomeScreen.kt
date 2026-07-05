@@ -29,7 +29,8 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
-    onNavigateToAddRecord: () -> Unit = {}
+    onNavigateToAddRecord: () -> Unit = {},
+    onNavigateToNewsDetail: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val heartRateHistory by viewModel.heartRateHistory.collectAsState()
@@ -58,7 +59,11 @@ fun HomeScreen(
                     LoadingView()
                 }
                 is HomeUiState.Success -> {
-                    NewsList(newsList = state.news, heartRateHistory = heartRateHistory)
+                    NewsList(
+                        newsList = state.news, 
+                        heartRateHistory = heartRateHistory,
+                        onNewsClick = { url -> onNavigateToNewsDetail(url) }
+                    )
                 }
                 is HomeUiState.Error -> {
                     ErrorView(message = state.message, onRetry = { viewModel.fetchNews() })
@@ -111,7 +116,7 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
 }
 
 @Composable
-fun NewsList(newsList: List<News>, heartRateHistory: List<Int>) {
+fun NewsList(newsList: List<News>, heartRateHistory: List<Int>, onNewsClick: (String) -> Unit) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -120,23 +125,16 @@ fun NewsList(newsList: List<News>, heartRateHistory: List<Int>) {
             HeartRateChart(dataPoints = heartRateHistory)
         }
         items(newsList) { news ->
-            NewsItemCard(news)
+            NewsItemCard(news, onClick = { onNewsClick(news.url) })
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewsItemCard(news: News) {
-    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+fun NewsItemCard(news: News, onClick: () -> Unit) {
     Card(
-        onClick = {
-            try {
-                uriHandler.openUri(news.url.trim())
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        },
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp)), // Glassmorphism rounded

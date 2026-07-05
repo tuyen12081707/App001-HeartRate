@@ -7,3 +7,8 @@ data class News(
     val url: String,
     val publishedAt: String
 )
+
+data class NewsDetail(
+    val url: String,
+    val content: String
+)
