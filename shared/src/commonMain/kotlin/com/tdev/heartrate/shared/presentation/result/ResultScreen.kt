@@ -111,14 +111,15 @@ fun ResultScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Hero Section - Pulse circle with BPM
-                val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition()
+                val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "PulseTransition")
                 val scale by infiniteTransition.androidx.compose.animation.core.animateFloat(
                     initialValue = 1f,
                     targetValue = 1.2f,
                     animationSpec = androidx.compose.animation.core.infiniteRepeatable(
                         animation = tween(400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
                         repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
-                    )
+                    ),
+                    label = "PulseScale"
                 )
 
                 Box(

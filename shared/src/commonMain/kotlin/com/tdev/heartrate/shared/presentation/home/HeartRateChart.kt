@@ -62,6 +62,9 @@ fun HeartRateChart(
         )
         Spacer(modifier = Modifier.height(16.dp))
         
+        val path = remember { Path() }
+        val fillPath = remember { Path() }
+        
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
@@ -72,8 +75,8 @@ fun HeartRateChart(
             val xStep = if (dataPoints.size > 1) width / (dataPoints.size - 1) else width
             val range = max(1, maxBpm - minBpm).toFloat()
 
-            val path = Path()
-            val fillPath = Path()
+            path.reset()
+            fillPath.reset()
             
             val points = dataPoints.mapIndexed { index, bpm ->
                 val x = index * xStep
