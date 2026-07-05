@@ -115,6 +115,11 @@ fun NewsList(newsList: List<News>) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        item {
+            // Placeholder data for Epic 2 Chart (will be replaced with real DB data later)
+            val mockData = listOf(72, 85, 68, 79, 90, 75, 82)
+            HeartRateChart(dataPoints = mockData)
+        }
         items(newsList) { news ->
             NewsItemCard(news)
         }

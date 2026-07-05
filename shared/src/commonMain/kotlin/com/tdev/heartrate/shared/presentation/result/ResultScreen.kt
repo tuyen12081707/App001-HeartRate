@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -110,6 +111,17 @@ fun ResultScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Hero Section - Pulse circle with BPM
+                val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "PulseTransition")
+                val scale by infiniteTransition.androidx.compose.animation.core.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.2f,
+                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                        animation = tween(400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                        repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                    ),
+                    label = "PulseScale"
+                )
+
                 Box(
                     modifier = Modifier
                         .size(180.dp)
@@ -128,7 +140,9 @@ fun ResultScreen(
                             imageVector = Icons.Default.Favorite,
                             contentDescription = null,
                             tint = Color(0xFFFF4081),
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier
+                                .size(32.dp)
+                                .androidx.compose.ui.draw.scale(scale)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
