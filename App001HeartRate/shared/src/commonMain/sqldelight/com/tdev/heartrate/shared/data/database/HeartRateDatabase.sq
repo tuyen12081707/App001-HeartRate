@@ -1,0 +1,24 @@
+import com.tdev.heartrate.shared.domain.model.BodyState;
+import com.tdev.heartrate.shared.domain.model.MeasureType;
+
+CREATE TABLE HeartRateEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    bpm INTEGER NOT NULL,
+    timestamp INTEGER NOT NULL,
+    measureType TEXT AS MeasureType NOT NULL,
+    bodyState TEXT AS BodyState NOT NULL,
+    note TEXT
+);
+
+insertRecord:
+INSERT INTO HeartRateEntity(bpm, timestamp, measureType, bodyState, note)
+VALUES (?, ?, ?, ?, ?);
+
+deleteRecord:
+DELETE FROM HeartRateEntity WHERE id = ?;
+
+getAllRecords:
+SELECT * FROM HeartRateEntity ORDER BY timestamp DESC;
+
+getAverageBpm:
+SELECT AVG(bpm) FROM HeartRateEntity;
