@@ -68,7 +68,7 @@ val presentationModule = module {
     factory { HistoryViewModel(get(), get()) }
     factory { AddRecordViewModel(get()) }
     factory { DashboardViewModel(get()) }
-    factory { HomeViewModel(get()) }
+    factory { HomeViewModel(get(), get()) }
 }
 
 expect val platformModule: Module

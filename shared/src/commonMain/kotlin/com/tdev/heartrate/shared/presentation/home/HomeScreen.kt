@@ -32,6 +32,7 @@ fun HomeScreen(
     onNavigateToAddRecord: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val heartRateHistory by viewModel.heartRateHistory.collectAsState()
 
     Scaffold(
         topBar = {
@@ -57,7 +58,7 @@ fun HomeScreen(
                     LoadingView()
                 }
                 is HomeUiState.Success -> {
-                    NewsList(newsList = state.news)
+                    NewsList(newsList = state.news, heartRateHistory = heartRateHistory)
                 }
                 is HomeUiState.Error -> {
                     ErrorView(message = state.message, onRetry = { viewModel.fetchNews() })
@@ -110,15 +111,13 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
 }
 
 @Composable
-fun NewsList(newsList: List<News>) {
+fun NewsList(newsList: List<News>, heartRateHistory: List<Int>) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            // Placeholder data for Epic 2 Chart (will be replaced with real DB data later)
-            val mockData = listOf(72, 85, 68, 79, 90, 75, 82)
-            HeartRateChart(dataPoints = mockData)
+            HeartRateChart(dataPoints = heartRateHistory)
         }
         items(newsList) { news ->
             NewsItemCard(news)
