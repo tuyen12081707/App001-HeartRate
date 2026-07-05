@@ -1,0 +1,56 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize]
+
+jobs:
+  ai_review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Quyền này cực kỳ quan trọng để bot có thể comment vào PR
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Lấy toàn bộ lịch sử để có thể git diff chính xác
+
+      # Dưới đây là script mô phỏng gọi Antigravity CLI như bạn mô tả
+      # Thực tế, nếu bạn không có CLI này trên GitHub Runner, bạn có thể gọi curl tới OpenAI/Gemini API
+      - name: Run AI Code Review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "Bắt đầu trích xuất các dòng code thay đổi trong Pull Request..."
+          
+          # 1. Lấy diff giữa nhánh hiện tại và nhánh target (main)
+          git diff origin/main...HEAD > mr_changes.diff
+          
+          # 2. Cài đặt AI CLI (Ví dụ minh họa, thay thế bằng công cụ thực tế của bạn)
+          # curl -fsSL https://antigravity.google/cli/install.sh | bash
+          
+          # 3. Gọi AI để review (Mô phỏng)
+          # REVIEW_RESULT=$(agy review --harness reviewer_harness.md --file mr_changes.diff)
+          
+          # --------- DƯỚI ĐÂY LÀ ĐOẠN GỌI GITHUB API ĐỂ COMMENT ---------
+          # Để demo, chúng ta gán một nội dung review giả lập. 
+          # Thực tế bạn sẽ thay chuỗi này bằng kết quả từ AI (biến $REVIEW_RESULT).
+          
+          REVIEW_RESULT="**🤖 AI Review Tự động:**\n\n- Không phát hiện Memory Leak.\n- Coroutines xử lý an toàn.\n- Recomposition UI ổn.\n\n*Review dựa trên \`reviewer_harness.md\`*"
+          
+          # JSON Payload cần escape các ký tự newline
+          JSON_PAYLOAD=$(jq -n --arg body "$REVIEW_RESULT" '{body: $body}')
+          
+          # 4. Bắn Comment lên GitHub Pull Request bằng GITHUB_TOKEN
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d "$JSON_PAYLOAD" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
+          
+          echo "Đã comment thành công lên Pull Request!"
