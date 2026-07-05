@@ -129,3 +129,8 @@ Before finalizing code, verify:
 
 ## 12. Version Control & Commits
 * Always follow the strict GitLab Commit Rules defined in `GIT_COMMIT_RULES.md` when committing code for this project.
+
+---
+
+## 13. Auto Workflow Execution
+* When the user requests to finish a task and automate the PR process, strictly follow the instructions in `AUTO_WORKFLOW.md`.
