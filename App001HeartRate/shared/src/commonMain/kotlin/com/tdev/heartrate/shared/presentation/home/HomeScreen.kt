@@ -123,11 +123,18 @@ fun NewsList(newsList: List<News>) {
 
 @Composable
 fun NewsItemCard(news: News) {
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp)) // Glassmorphism rounded
-            .clickable { /* Handle click to webview if needed */ },
+            .clickable {
+                try {
+                    uriHandler.openUri(news.url)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         ),
