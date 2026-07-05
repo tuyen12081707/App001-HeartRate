@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 data class AddRecordUiState(
     val bpm: String = "",
-    val bodyState: BodyState = BodyState.RESTING,
+    val bodyState: BodyState? = null,
     val note: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null
@@ -64,6 +64,11 @@ class AddRecordViewModel(
 
         if (bpmInt !in 30..250) {
             _uiState.update { it.copy(errorMessage = "BPM must be between 30 and 250") }
+            return
+        }
+
+        if (currentState.bodyState == null) {
+            _uiState.update { it.copy(errorMessage = "Please select a body state") }
             return
         }
 

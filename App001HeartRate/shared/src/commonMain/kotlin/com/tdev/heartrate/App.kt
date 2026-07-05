@@ -7,6 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +40,8 @@ import com.tdev.heartrate.shared.di.dataModule
 import com.tdev.heartrate.shared.di.domainModule
 import com.tdev.heartrate.shared.di.platformModule
 import com.tdev.heartrate.shared.di.presentationModule
+import com.tdev.heartrate.shared.di.networkModule
+import com.tdev.heartrate.shared.presentation.home.HomeScreen
 
 import com.tdev.heartrate.shared.presentation.camera.CameraMeasurementScreen
 import com.tdev.heartrate.shared.presentation.camera.FailedScanScreen
@@ -50,7 +54,7 @@ import com.tdev.heartrate.shared.presentation.profile.ProfileScreen
 import com.tdev.heartrate.shared.presentation.result.ResultScreen
 
 enum class Screen {
-    DISCLAIMER, DASHBOARD, HISTORY, ADD_RECORD, CAMERA_MEASUREMENT, PROFILE, RESULT, FAILED_SCAN
+    DISCLAIMER, HOME, DASHBOARD, HISTORY, ADD_RECORD, CAMERA_MEASUREMENT, PROFILE, RESULT, FAILED_SCAN
 }
 
 @Composable
@@ -61,7 +65,8 @@ fun App(appModule: Module = module { }) {
             platformModule,
             domainModule,
             dataModule,
-            presentationModule
+            presentationModule,
+            networkModule
         )
     }) {
         AppTheme {
@@ -76,7 +81,10 @@ fun App(appModule: Module = module { }) {
             ) {
                 Scaffold(
                     bottomBar = {
-                        if (currentScreen != Screen.DISCLAIMER && currentScreen != Screen.CAMERA_MEASUREMENT && currentScreen != Screen.ADD_RECORD && currentScreen != Screen.RESULT && currentScreen != Screen.FAILED_SCAN) {
+                        val hideBottomBarScreens = listOf(
+                            Screen.DISCLAIMER, Screen.CAMERA_MEASUREMENT, Screen.ADD_RECORD, Screen.RESULT, Screen.FAILED_SCAN
+                        )
+                        if (currentScreen !in hideBottomBarScreens) {
                             CustomBottomBar(
                                 items = listOf(
                                     BottomBarItem(
@@ -92,6 +100,12 @@ fun App(appModule: Module = module { }) {
                                         onClick = { currentScreen = Screen.HISTORY }
                                     ),
                                     BottomBarItem(
+                                        title = "News",
+                                        icon = Icons.Default.Info,
+                                        isSelected = currentScreen == Screen.HOME,
+                                        onClick = { currentScreen = Screen.HOME }
+                                    ),
+                                    BottomBarItem(
                                         title = "Profile",
                                         icon = Icons.Default.Person,
                                         isSelected = currentScreen == Screen.PROFILE,
@@ -102,7 +116,7 @@ fun App(appModule: Module = module { }) {
                         }
                     },
                     floatingActionButton = {
-                        if (currentScreen == Screen.DASHBOARD || currentScreen == Screen.HISTORY) {
+                        if (currentScreen == Screen.HOME || currentScreen == Screen.DASHBOARD || currentScreen == Screen.HISTORY) {
                             FloatingActionButton(
                                 onClick = { currentScreen = Screen.ADD_RECORD }
                             ) {
@@ -116,6 +130,11 @@ fun App(appModule: Module = module { }) {
                             Screen.DISCLAIMER -> {
                                 DisclaimerScreen(
                                     onAgree = { currentScreen = Screen.DASHBOARD }
+                                )
+                            }
+                            Screen.HOME -> {
+                                HomeScreen(
+                                    onNavigateToAddRecord = { currentScreen = Screen.ADD_RECORD }
                                 )
                             }
                             Screen.DASHBOARD -> {
@@ -140,9 +159,9 @@ fun App(appModule: Module = module { }) {
                                     viewModel.sideEffect.collect { effect ->
                                         if (effect is com.tdev.heartrate.shared.presentation.add.AddRecordSideEffect.NavigateToResult) {
                                             lastSavedBpm = effect.bpm
-                                            lastSavedBodyState = viewModel.uiState.value.bodyState.name
-                                                .lowercase()
-                                                .replaceFirstChar { it.uppercase() }
+                                            lastSavedBodyState = viewModel.uiState.value.bodyState?.name
+                                                ?.lowercase()
+                                                ?.replaceFirstChar { it.uppercase() } ?: ""
                                             currentScreen = Screen.RESULT
                                         }
                                     }
