@@ -121,20 +121,21 @@ fun NewsList(newsList: List<News>) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewsItemCard(news: News) {
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     Card(
+        onClick = {
+            try {
+                uriHandler.openUri(news.url.trim())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        },
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp)) // Glassmorphism rounded
-            .clickable {
-                try {
-                    uriHandler.openUri(news.url)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            },
+            .clip(RoundedCornerShape(24.dp)), // Glassmorphism rounded
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         ),
