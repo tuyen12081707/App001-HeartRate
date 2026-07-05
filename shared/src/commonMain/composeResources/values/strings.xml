@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App & Navigation -->
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_history">History</string>
+    <string name="bpm_unit">BPM</string>
+
+    <!-- Disclaimer Screen -->
+    <string name="disclaimer_title">Disclaimer</string>
+    <string name="disclaimer_content">This app is for informational purposes only and is not intended to replace professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.</string>
+    <string name="disclaimer_agree">I Agree</string>
+
+    <!-- History Screen -->
+    <string name="history_title">Heart Rate History</string>
+    <string name="history_empty">No records yet. Let\'s measure your heart rate!</string>
+    <string name="history_delete">Delete</string>
+
+    <!-- Add Record Screen -->
+    <string name="add_record_title">Add Heart Rate</string>
+    <string name="add_record_bpm_label">Heart Rate (BPM)</string>
+    <string name="add_record_body_state">Body State:</string>
+    <string name="add_record_note_label">Note (Optional)</string>
+    <string name="add_record_save_button">Save</string>
+    <string name="add_record_error_invalid">Invalid BPM</string>
+    <string name="add_record_error_range">BPM must be between 30 and 250</string>
+    <string name="add_record_success">Saved successfully!</string>
+    <string name="add_record_error_saving">Error saving data</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">Statistics</string>
+    <string name="dashboard_average">Average</string>
+    <string name="dashboard_count">Records</string>
+    <string name="dashboard_highest">Highest</string>
+    <string name="dashboard_lowest">Lowest</string>
+    <string name="dashboard_chart_placeholder">Line chart will be displayed here</string>
+
+    <!-- Camera Screen -->
+    <string name="camera_measure_button">Measure with Camera</string>
+    <string name="camera_title">Camera Measurement</string>
+    <string name="camera_instruction">Please cover the back camera and flash completely with your finger.</string>
+    <string name="camera_initializing">Initializing Camera...</string>
+    <string name="camera_measuring">Measuring... Please hold still</string>
+    <string name="camera_completed">Completed!</string>
+    <string name="camera_error">Error: %1$s</string>
+    <string name="camera_no_finger">Vui lòng đặt ngón tay của bạn lên camera</string>
+    <string name="camera_failed">Đo thất bại</string>
+    
+    <!-- Failed Scan Screen -->
+    <string name="failed_scan_title">Quét thất bại</string>
+    <string name="failed_scan_description">Không thể đo nhịp tim. Vui lòng đảm bảo ngón tay che kín camera và đèn flash, sau đó thử lại.</string>
+    <string name="failed_scan_try_again">Thử lại</string>
+    <string name="failed_scan_go_home">Về trang chủ</string>
+</resources>
