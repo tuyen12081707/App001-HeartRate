@@ -54,7 +54,7 @@ import com.tdev.heartrate.shared.presentation.profile.ProfileScreen
 import com.tdev.heartrate.shared.presentation.result.ResultScreen
 
 enum class Screen {
-    DISCLAIMER, HOME, DASHBOARD, HISTORY, ADD_RECORD, CAMERA_MEASUREMENT, PROFILE, RESULT, FAILED_SCAN
+    DISCLAIMER, HOME, DASHBOARD, HISTORY, ADD_RECORD, CAMERA_MEASUREMENT, PROFILE, RESULT, FAILED_SCAN, NEWS_DETAIL
 }
 
 @Composable
@@ -74,6 +74,7 @@ fun App(appModule: Module = module { }) {
             var prefilledBpm by remember { mutableStateOf<String?>(null) }
             var lastSavedBpm by remember { mutableStateOf(0) }
             var lastSavedBodyState by remember { mutableStateOf("") }
+            var selectedNewsUrl by remember { mutableStateOf("") }
 
             androidx.compose.material3.Surface(
                 modifier = Modifier.fillMaxSize(),
@@ -82,7 +83,7 @@ fun App(appModule: Module = module { }) {
                 Scaffold(
                     bottomBar = {
                         val hideBottomBarScreens = listOf(
-                            Screen.DISCLAIMER, Screen.CAMERA_MEASUREMENT, Screen.ADD_RECORD, Screen.RESULT, Screen.FAILED_SCAN
+                            Screen.DISCLAIMER, Screen.CAMERA_MEASUREMENT, Screen.ADD_RECORD, Screen.RESULT, Screen.FAILED_SCAN, Screen.NEWS_DETAIL
                         )
                         if (currentScreen !in hideBottomBarScreens) {
                             CustomBottomBar(
@@ -134,7 +135,11 @@ fun App(appModule: Module = module { }) {
                             }
                             Screen.HOME -> {
                                 HomeScreen(
-                                    onNavigateToAddRecord = { currentScreen = Screen.ADD_RECORD }
+                                    onNavigateToAddRecord = { currentScreen = Screen.ADD_RECORD },
+                                    onNavigateToNewsDetail = { url -> 
+                                        selectedNewsUrl = url
+                                        currentScreen = Screen.NEWS_DETAIL
+                                    }
                                 )
                             }
                             Screen.DASHBOARD -> {
@@ -197,6 +202,12 @@ fun App(appModule: Module = module { }) {
                                 FailedScanScreen(
                                     onTryAgain = { currentScreen = Screen.CAMERA_MEASUREMENT },
                                     onGoHome = { currentScreen = Screen.DASHBOARD }
+                                )
+                            }
+                            Screen.NEWS_DETAIL -> {
+                                com.tdev.heartrate.shared.presentation.newsdetail.NewsDetailScreen(
+                                    url = selectedNewsUrl,
+                                    onNavigateBack = { currentScreen = Screen.HOME }
                                 )
                             }
                         }

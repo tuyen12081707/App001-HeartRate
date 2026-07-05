@@ -28,3 +28,16 @@ fun NewsDto.toDomain(): News {
         publishedAt = publishedAt.orEmpty()
     )
 }
+
+@Serializable
+data class NewsDetailDto(
+    val url: String? = null,
+    val content: String? = null
+)
+
+fun NewsDetailDto.toDomain(): com.tdev.heartrate.shared.domain.model.NewsDetail {
+    return com.tdev.heartrate.shared.domain.model.NewsDetail(
+        url = url.orEmpty(),
+        content = content.orEmpty()
+    )
+}

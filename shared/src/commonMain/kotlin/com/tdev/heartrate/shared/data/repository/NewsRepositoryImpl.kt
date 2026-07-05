@@ -22,4 +22,11 @@ class NewsRepositoryImpl(
     }.catch { e ->
         emit(Result.failure(e))
     }
+
+    override fun getNewsDetail(url: String): Flow<Result<com.tdev.heartrate.shared.domain.model.NewsDetail>> = flow {
+        val response = apiClient.getNewsDetail(url)
+        emit(Result.success(response.toDomain()))
+    }.catch { e ->
+        emit(Result.failure(e))
+    }
 }
