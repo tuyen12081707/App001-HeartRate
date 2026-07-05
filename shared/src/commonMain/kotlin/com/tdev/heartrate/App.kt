@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -87,14 +88,8 @@ fun App(appModule: Module = module { }) {
                             CustomBottomBar(
                                 items = listOf(
                                     BottomBarItem(
-                                        title = "Home",
-                                        icon = Icons.Default.Home,
-                                        isSelected = currentScreen == Screen.HOME,
-                                        onClick = { currentScreen = Screen.HOME }
-                                    ),
-                                    BottomBarItem(
                                         title = stringResource(Res.string.tab_dashboard),
-                                        icon = Icons.Default.Favorite, // Updated icon for Dashboard
+                                        icon = Icons.Default.Home,
                                         isSelected = currentScreen == Screen.DASHBOARD,
                                         onClick = { currentScreen = Screen.DASHBOARD }
                                     ),
@@ -103,6 +98,12 @@ fun App(appModule: Module = module { }) {
                                         icon = Icons.AutoMirrored.Filled.List,
                                         isSelected = currentScreen == Screen.HISTORY,
                                         onClick = { currentScreen = Screen.HISTORY }
+                                    ),
+                                    BottomBarItem(
+                                        title = "News",
+                                        icon = Icons.Default.Info,
+                                        isSelected = currentScreen == Screen.HOME,
+                                        onClick = { currentScreen = Screen.HOME }
                                     ),
                                     BottomBarItem(
                                         title = "Profile",
@@ -128,7 +129,7 @@ fun App(appModule: Module = module { }) {
                         when (currentScreen) {
                             Screen.DISCLAIMER -> {
                                 DisclaimerScreen(
-                                    onAgree = { currentScreen = Screen.HOME }
+                                    onAgree = { currentScreen = Screen.DASHBOARD }
                                 )
                             }
                             Screen.HOME -> {
