@@ -1,0 +1,85 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize]
+
+jobs:
+  ai_review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Quyền này để bot có thể comment vào PR
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Lấy toàn bộ lịch sử để có thể git diff chính xác
+
+      - name: Run AI Code Review via Gemini API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "Bắt đầu trích xuất các dòng code thay đổi trong Pull Request..."
+          
+          # 1. Lấy diff giữa nhánh hiện tại và nhánh target (main)
+          git diff origin/main...HEAD > mr_changes.diff
+          
+          if [ ! -s mr_changes.diff ]; then
+            echo "Không có thay đổi nào trong PR."
+            exit 0
+          fi
+          
+          echo "Đang gọi Gemini API để review code..."
+          
+          # 2. Đọc harness và diff
+          HARNESS=$(cat agent/kmp_pr_reviewer_harness.md)
+          DIFF=$(cat mr_changes.diff)
+          
+          # 3. Tạo Payload JSON cho Gemini API (Dùng jq để escape ký tự đặc biệt an toàn)
+          PAYLOAD=$(jq -n \
+            --arg prompt "$HARNESS" \
+            --arg diff "$DIFF" \
+            '{
+              contents: [{
+                parts: [
+                  {text: "Hãy đóng vai trò Tech Lead và review đoạn code diff sau đây dựa trên các quy tắc nghiêm ngặt này:\n\n"},
+                  {text: $prompt},
+                  {text: "\n\n--- DIFF CỦA PULL REQUEST ---\n"},
+                  {text: $diff}
+                ]
+              }],
+              generationConfig: {
+                temperature: 0.2
+              }
+            }')
+          
+          # 4. Gửi request đến Google Gemini API (Sử dụng model gemini-1.5-pro)
+          RESPONSE=$(curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=$GEMINI_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -d "$PAYLOAD")
+          
+          # 5. Lấy kết quả text từ JSON trả về
+          REVIEW_RESULT=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+          
+          if [ -z "$REVIEW_RESULT" ] || [ "$REVIEW_RESULT" == "null" ]; then
+            REVIEW_RESULT="**🤖 AI Review Tự động:** Lỗi khi gọi Gemini API. Vui lòng kiểm tra lại \`GEMINI_API_KEY\` trong GitHub Secrets."
+            echo "API Response: $RESPONSE"
+          fi
+          
+          # 6. Tạo payload để comment lên GitHub PR
+          COMMENT_PAYLOAD=$(jq -n --arg body "$REVIEW_RESULT" '{body: $body}')
+          
+          # 7. Bắn Comment lên GitHub Pull Request
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d "$COMMENT_PAYLOAD" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
+          
+          echo "Đã comment thành công lên Pull Request!"
