@@ -194,6 +194,39 @@ Khi được yêu cầu review PR, đóng vai **Senior KMP Tech Lead cực kỳ 
 
 ---
 
+## 14. Tiêu Chuẩn UI State & Data State
+
+Với mọi màn hình hoặc tính năng có gọi API / xử lý dữ liệu (Flow/Coroutine), **BẮT BUỘC** tuân theo cấu trúc Generic State sau đây.
+
+### 1. Generic DataState
+Định nghĩa một trạng thái chuẩn (nếu dự án chưa có thì tạo file `DataState.kt` ở gói `core/presentation` hoặc tương tự):
+```kotlin
+sealed interface DataState<out T> {
+    data object Idle : DataState<Nothing>
+    data object Loading : DataState<Nothing>
+    data class Success<T>(val data: T) : DataState<T>
+    data class Error(val message: String, val throwable: Throwable? = null) : DataState<Nothing>
+}
+```
+
+### 2. Cách áp dụng vào UiState
+Tuyệt đối **không** dùng `sealed class` trực tiếp cho `UiState` (ví dụ `sealed class FeatureUiState`). 
+Thay vào đó, **luôn dùng `data class`** bọc `DataState` lại, để tận dụng hàm `.copy()` và dễ mở rộng (như thêm cờ `isDialogVisible`, `isRefreshing`, v.v.):
+
+```kotlin
+data class FeatureUiState(
+    val dataState: DataState<FeatureModel> = DataState.Idle,
+    // Thêm các biến state phụ khác nếu có
+    // val isDialogVisible: Boolean = false
+)
+```
+
+### 3. Xử lý trong ViewModel & UI
+- **ViewModel:** Luôn gọi `_uiState.value = _uiState.value.copy(dataState = DataState.Loading)` hoặc `DataState.Success(...)`.
+- **Compose UI:** Hứng data bằng `when (val state = uiState.dataState)` và bắt đủ 4 case: `Idle`, `Loading`, `Success`, `Error`.
+
+---
+
 ## 15. Epic Roadmap — App001HeartRate
 
 Dự án theo dõi nhịp tim với các Phase sau:

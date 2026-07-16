@@ -23,7 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
+import com.tdev.heartrate.shared.presentation.DataState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +34,7 @@ fun NewsDetailScreen(
     viewModel: NewsDetailViewModel = koinViewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(url) {
         viewModel.fetchNewsDetail(url)
@@ -80,13 +82,13 @@ fun NewsDetailScreen(
                     )
             )
 
-            when (val state = uiState) {
-                is NewsDetailUiState.Loading -> {
+            when (val state = uiState.dataState) {
+                is DataState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
-                is NewsDetailUiState.Error -> {
+                is DataState.Error -> {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(paddingValues),
                         verticalArrangement = Arrangement.Center,
@@ -104,7 +106,7 @@ fun NewsDetailScreen(
                         }
                     }
                 }
-                is NewsDetailUiState.Success -> {
+                is DataState.Success -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -162,7 +164,7 @@ fun NewsDetailScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = state.newsDetail.url,
+                                    text = state.data.url,
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(bottom = 24.dp)
@@ -171,7 +173,7 @@ fun NewsDetailScreen(
                                 Divider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), modifier = Modifier.padding(bottom = 24.dp))
 
                                 Text(
-                                    text = state.newsDetail.content,
+                                    text = state.data.content,
                                     fontSize = 16.sp,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     lineHeight = 28.sp,
@@ -180,6 +182,9 @@ fun NewsDetailScreen(
                             }
                         }
                     }
+                }
+                is DataState.Idle -> {
+                    // Do nothing or show initial state
                 }
             }
         }

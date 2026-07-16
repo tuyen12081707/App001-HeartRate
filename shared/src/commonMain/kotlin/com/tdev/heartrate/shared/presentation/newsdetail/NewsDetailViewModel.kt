@@ -4,32 +4,34 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tdev.heartrate.shared.domain.model.NewsDetail
 import com.tdev.heartrate.shared.domain.usecase.GetNewsDetailUseCase
+import com.tdev.heartrate.shared.presentation.BaseViewModel
+import com.tdev.heartrate.shared.presentation.DataState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-sealed class NewsDetailUiState {
-    object Loading : NewsDetailUiState()
-    data class Success(val newsDetail: NewsDetail) : NewsDetailUiState()
-    data class Error(val message: String) : NewsDetailUiState()
-}
+data class NewsDetailUiState(
+    val dataState : DataState<NewsDetail> = DataState.Loading
+)
 
 class NewsDetailViewModel(
     private val getNewsDetailUseCase: GetNewsDetailUseCase
-) : ViewModel() {
+) : BaseViewModel<NewsDetailUiState, Unit, Unit>(NewsDetailUiState()) {
 
-    private val _uiState = MutableStateFlow<NewsDetailUiState>(NewsDetailUiState.Loading)
-    val uiState: StateFlow<NewsDetailUiState> = _uiState.asStateFlow()
+
+    override fun onIntent(intent: Unit) {
+
+    }
 
     fun fetchNewsDetail(url: String) {
-        _uiState.value = NewsDetailUiState.Loading
+        _uiState.value = _uiState.value.copy(dataState = DataState.Loading)
         viewModelScope.launch {
             getNewsDetailUseCase(url).collect { result ->
                 result.onSuccess {
-                    _uiState.value = NewsDetailUiState.Success(it)
+                    _uiState.value = _uiState.value.copy(dataState = DataState.Success(it))
                 }.onFailure {
-                    _uiState.value = NewsDetailUiState.Error(it.message ?: "Unknown error")
+                    _uiState.value = _uiState.value.copy(dataState = DataState.Error(it.message ?: "Unknown error"))
                 }
             }
         }
