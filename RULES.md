@@ -190,32 +190,7 @@ Khi được yêu cầu review PR, đóng vai **Senior KMP Tech Lead cực kỳ 
 - [ ] Build Check: Code mới build thành công trên máy local
 - [ ] Tách nhỏ commit nếu làm nhiều tính năng
 
----
 
-## 14. Auto Workflow (Khi User Yêu Cầu)
-
-Khi user nói: **"Hoàn thành Task và chạy Auto Workflow"** — **KHÔNG hỏi lại**, chạy ngầm theo thứ tự:
-
-### Bước 1: Kiểm tra Code
-- Tự kiểm tra lại toàn bộ file vừa sửa
-- Đảm bảo không có lỗi C-Interop (iOS) và không có Memory Leak
-
-### Bước 2: Commit theo Rule
-```bash
-git add .
-git commit -m "[TICKET-ID] <type>(<scope>): <subject>"
-```
-
-### Bước 3: Push Code
-```bash
-git push
-# Nếu lỗi upstream:
-git push --set-upstream origin <tên-nhánh-hiện-tại>
-```
-
-### Bước 4: Báo Cáo & PR
-- Xuất **PR Description** chuẩn (Summary, Key Features, Checklists)
-- Trả link: `https://github.com/<user>/<repo>/pull/new/<tên-nhánh>`
 
 ---
 
