@@ -1,0 +1,4 @@
+interface:
+  display_name: "Android ADB E2E Test"
+  short_description: "Kiểm thử Android thực tế qua ADB"
+  default_prompt: "Use $android-adb-e2e-test to verify this Android feature on a running device."
