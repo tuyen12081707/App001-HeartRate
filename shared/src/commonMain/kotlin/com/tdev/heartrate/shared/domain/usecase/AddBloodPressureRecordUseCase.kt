@@ -11,6 +11,7 @@ class AddBloodPressureRecordUseCase(
         systolic: Int,
         diastolic: Int,
         pulse: Int,
+        timestamp: Long = getCurrentTimeMillis(),
         note: String? = null
     ) {
         repository.insertRecord(
@@ -18,7 +19,7 @@ class AddBloodPressureRecordUseCase(
                 systolic = systolic,
                 diastolic = diastolic,
                 pulse = pulse,
-                timestamp = getCurrentTimeMillis(),
+                timestamp = timestamp,
                 note = note
             )
         )

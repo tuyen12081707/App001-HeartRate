@@ -14,6 +14,7 @@ class BloodPressureRecordTest {
     @Test
     fun classifiesNormalReading() {
         assertEquals(BloodPressureLevel.NORMAL, record(119, 79).level())
+        assertEquals(BloodPressureLevel.NORMAL, record(129, 79).level())
     }
 
     @Test
@@ -28,6 +29,13 @@ class BloodPressureRecordTest {
     fun classifiesHypertensiveCrisisWhenEitherReadingExceedsLimit() {
         assertEquals(BloodPressureLevel.HYPERTENSIVE_CRISIS, record(181, 80).level())
         assertEquals(BloodPressureLevel.HYPERTENSIVE_CRISIS, record(130, 121).level())
+    }
+
+    @Test
+    fun usesHighestRiskLevelForMixedReadings() {
+        assertEquals(BloodPressureLevel.HYPERTENSIVE_CRISIS, record(181, 50).level())
+        assertEquals(BloodPressureLevel.HYPERTENSION_STAGE_2, record(145, 55).level())
+        assertEquals(BloodPressureLevel.HYPERTENSION_STAGE_1, record(135, 55).level())
     }
 
     private fun record(systolic: Int, diastolic: Int) =

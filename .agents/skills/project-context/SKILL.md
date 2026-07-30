@@ -121,6 +121,9 @@ enum class BodyState { RESTING, EXERCISING, SLEEPING, AFTER_WAKING_UP, BEFORE_BE
 enum class BloodPressureLevel { HYPOTENSION, NORMAL, HYPERTENSION_STAGE_1, HYPERTENSION_STAGE_2, HYPERTENSIVE_CRISIS }
 
 fun BloodPressureRecord.level(): BloodPressureLevel
+fun classifyBloodPressure(systolic: Int, diastolic: Int): BloodPressureLevel
+object BloodPressureThresholds // ngưỡng phân loại duy nhất dùng bởi domain + UI
+object BloodPressureInputConstraints // range nhập Systolic/Diastolic/Pulse
 ```
 
 ### Repository Interfaces (`domain/repository/`)
@@ -149,7 +152,7 @@ interface NewsRepository {
 | Class | Constructor | invoke() signature |
 |-------|------------|-------------------|
 | `AddHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(bpm: Int, measureType: MeasureType = MANUAL, bodyState: BodyState, note: String? = null)` |
-| `AddBloodPressureRecordUseCase` | `(BloodPressureRepository)` | `suspend invoke(systolic: Int, diastolic: Int, pulse: Int, note: String? = null)` |
+| `AddBloodPressureRecordUseCase` | `(BloodPressureRepository)` | `suspend invoke(systolic: Int, diastolic: Int, pulse: Int, timestamp: Long = now, note: String? = null)` |
 | `GetHeartRateHistoryUseCase` | `(HeartRateRepository)` | `invoke(): Flow<List<HeartRateRecord>>` |
 | `DeleteHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(id: Long)` |
 | `GetHeartRateStatsUseCase` | `(HeartRateRepository)` | `invoke(): Flow<HeartRateStats>` |
@@ -179,7 +182,7 @@ abstract class BaseViewModel<S, I, E>(initialState: S) : ViewModel() {
 | `DashboardViewModel` | `DashboardUiState(stats, isLoading)` | `Unit` | `Unit` | `(GetHeartRateStatsUseCase)` |
 | `HistoryViewModel` | `HistoryUiState(isLoading, records, isEmpty)` | `HistoryIntent.DeleteRecord(id)` | `Unit` | `(GetHeartRateHistoryUseCase, DeleteHeartRateRecordUseCase)` |
 | `AddRecordViewModel` | `AddRecordUiState(bpm, bodyState, note, isLoading, errorMessage)` | `UpdateBpm/UpdateBodyState/UpdateNote/SaveRecord/ClearError` | `NavigateBack/NavigateToResult(bpm)/ShowSnackbar(message)` | `(AddHeartRateRecordUseCase)` |
-| `BloodPressureViewModel` | `BloodPressureUiState(systolic, diastolic, pulse, timestamp, note, isLoading, errorMessage)` | `UpdateSystolic/UpdateDiastolic/UpdatePulse/UpdateNote/RefreshTimestamp/SaveRecord` | `NavigateBack/ShowError(message)` | `(AddBloodPressureRecordUseCase)` |
+| `BloodPressureViewModel` | `BloodPressureUiState(systolic, diastolic, pulse, timestamp, note, isLoading, errorMessage)` + derived `level` | `UpdateSystolic/UpdateDiastolic/UpdatePulse/UpdateTimestamp/UpdateNote/SaveRecord` | `NavigateBack/ShowError(message)` | `(AddBloodPressureRecordUseCase)` |
 | `NewsDetailViewModel` | — | — | — | `(GetNewsDetailUseCase)` |
 
 ### Screens đã có & navigation params
@@ -275,8 +278,10 @@ quay về `Screen.DASHBOARD`.
 
 Hoàn thành đầy đủ node Figma `33:2705`: domain model/level classification,
 repository/mapper/use case, SQLDelight entity/query/migration `1.sqm`,
-`BloodPressureViewModel`, `BloodPressureScreen`, Koin, navigation Dashboard và unit
-tests bằng fake repository/Flow. Validation đã pass:
+`BloodPressureViewModel`, `BloodPressureScreen`, date/time wheel dialog, live
+classification từ domain thresholds, Koin, navigation Dashboard và unit tests.
+Timestamp người dùng chọn được truyền xuyên ViewModel → use case → repository.
+Validation đã pass:
 `:shared:compileAndroidMain`, `:shared:testAndroidHostTest`,
 `:shared:compileKotlinIosSimulatorArm64`, `:androidApp:assembleDebug`.
 APK debug: `androidApp/build/outputs/apk/debug/androidApp-debug.apk`.

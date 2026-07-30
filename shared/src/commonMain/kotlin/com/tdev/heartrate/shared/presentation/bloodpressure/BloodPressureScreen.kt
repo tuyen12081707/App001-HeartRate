@@ -1,5 +1,6 @@
 package com.tdev.heartrate.shared.presentation.bloodpressure
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,21 +26,30 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Note
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,9 +59,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app001heartrate.shared.generated.resources.*
+import com.tdev.heartrate.shared.domain.model.BloodPressureInputConstraints
 import com.tdev.heartrate.shared.domain.model.BloodPressureLevel
-import com.tdev.heartrate.shared.domain.model.level
+import com.tdev.heartrate.shared.domain.model.BloodPressureThresholds
 import com.tdev.heartrate.shared.presentation.components.AnimatedPrimaryButton
 import com.tdev.heartrate.shared.presentation.theme.BloodPressureCrisis
 import com.tdev.heartrate.shared.presentation.theme.BloodPressureHypotension
@@ -65,9 +78,12 @@ import com.tdev.heartrate.shared.presentation.theme.SurfaceWhite
 import com.tdev.heartrate.shared.presentation.theme.TextDarkCharcoal
 import com.tdev.heartrate.shared.presentation.theme.TextGray
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.coroutines.flow.collectLatest
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun BloodPressureScreen(
@@ -77,6 +93,7 @@ fun BloodPressureScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDateDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.sideEffect) {
         viewModel.sideEffect.collectLatest { effect ->
@@ -121,7 +138,7 @@ fun BloodPressureScreen(
 
             DateCard(
                 timestamp = uiState.timestamp,
-                onClick = { viewModel.onIntent(BloodPressureIntent.RefreshTimestamp) }
+                onClick = { showDateDialog = true }
             )
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -132,15 +149,21 @@ fun BloodPressureScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             BloodPressureInfoCard(
-                level = com.tdev.heartrate.shared.domain.model.BloodPressureRecord(
-                    systolic = uiState.systolic,
-                    diastolic = uiState.diastolic,
-                    pulse = uiState.pulse,
-                    timestamp = uiState.timestamp
-                ).level()
+                level = uiState.level
             )
             Spacer(modifier = Modifier.height(96.dp))
         }
+    }
+
+    if (showDateDialog) {
+        BloodPressureDateTimeDialog(
+            timestamp = uiState.timestamp,
+            onDismiss = { showDateDialog = false },
+            onConfirm = { timestamp ->
+                viewModel.onIntent(BloodPressureIntent.UpdateTimestamp(timestamp))
+                showDateDialog = false
+            }
+        )
     }
 }
 
@@ -162,7 +185,7 @@ private fun Header(onNavigateBack: () -> Unit) {
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = "New Record",
+            text = stringResource(Res.string.blood_pressure_new_record),
             color = TextDarkCharcoal,
             fontSize = 20.sp,
             lineHeight = 24.sp,
@@ -196,9 +219,18 @@ private fun MeasurementCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MeasurementLabel(title = "Systolic", unit = "mmHg")
-                MeasurementLabel(title = "Diastolic", unit = "mmHg")
-                MeasurementLabel(title = "Pulse", unit = "bpm")
+                MeasurementLabel(
+                    title = stringResource(Res.string.blood_pressure_systolic),
+                    unit = stringResource(Res.string.blood_pressure_unit_mmhg)
+                )
+                MeasurementLabel(
+                    title = stringResource(Res.string.blood_pressure_diastolic),
+                    unit = stringResource(Res.string.blood_pressure_unit_mmhg)
+                )
+                MeasurementLabel(
+                    title = stringResource(Res.string.blood_pressure_pulse),
+                    unit = stringResource(Res.string.blood_pressure_unit_bpm)
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -206,19 +238,19 @@ private fun MeasurementCard(
             ) {
                 NumberWheelPicker(
                     selectedValue = systolic,
-                    range = 40..250,
+                    range = BloodPressureInputConstraints.SYSTOLIC_RANGE,
                     onValueChange = onSystolicChange,
                     modifier = Modifier.width(60.dp)
                 )
                 NumberWheelPicker(
                     selectedValue = diastolic,
-                    range = 20..150,
+                    range = BloodPressureInputConstraints.DIASTOLIC_RANGE,
                     onValueChange = onDiastolicChange,
                     modifier = Modifier.width(60.dp)
                 )
                 NumberWheelPicker(
                     selectedValue = pulse,
-                    range = 30..250,
+                    range = BloodPressureInputConstraints.PULSE_RANGE,
                     onValueChange = onPulseChange,
                     modifier = Modifier.width(60.dp)
                 )
@@ -357,7 +389,7 @@ private fun DateCard(timestamp: Long, onClick: () -> Unit) {
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = "Date",
+                    text = stringResource(Res.string.blood_pressure_date),
                     color = TextDarkCharcoal,
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
@@ -375,11 +407,290 @@ private fun DateCard(timestamp: Long, onClick: () -> Unit) {
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = formatBloodPressureDate(timestamp),
+                    text = formatBloodPressureDate(
+                        timestamp = timestamp,
+                        monthLabel = monthLabel(
+                            Instant.fromEpochMilliseconds(timestamp)
+                                .toLocalDateTime(TimeZone.currentSystemDefault())
+                                .monthNumber
+                        )
+                    ),
                     color = TextGray,
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
                     fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BloodPressureDateTimeDialog(
+    timestamp: Long,
+    onDismiss: () -> Unit,
+    onConfirm: (Long) -> Unit
+) {
+    val timeZone = TimeZone.currentSystemDefault()
+    val initialDateTime = remember(timestamp) {
+        Instant.fromEpochMilliseconds(timestamp).toLocalDateTime(timeZone)
+    }
+    var hour by remember(timestamp) { mutableIntStateOf(initialDateTime.hour) }
+    var minute by remember(timestamp) { mutableIntStateOf(initialDateTime.minute) }
+    var day by remember(timestamp) { mutableIntStateOf(initialDateTime.dayOfMonth) }
+    var month by remember(timestamp) { mutableIntStateOf(initialDateTime.monthNumber) }
+    var year by remember(timestamp) { mutableIntStateOf(initialDateTime.year) }
+    val availableDays = remember(month, year) { (1..daysInMonth(month, year)).toList() }
+    val availableYears = remember(initialDateTime.year) {
+        ((initialDateTime.year - DATE_YEAR_RANGE)..(initialDateTime.year + DATE_YEAR_RANGE)).toList()
+    }
+    val monthLabels = listOf(
+        stringResource(Res.string.month_jan),
+        stringResource(Res.string.month_feb),
+        stringResource(Res.string.month_mar),
+        stringResource(Res.string.month_apr),
+        stringResource(Res.string.month_may),
+        stringResource(Res.string.month_jun),
+        stringResource(Res.string.month_jul),
+        stringResource(Res.string.month_aug),
+        stringResource(Res.string.month_sep),
+        stringResource(Res.string.month_oct),
+        stringResource(Res.string.month_nov),
+        stringResource(Res.string.month_dec)
+    )
+
+    LaunchedEffect(availableDays) {
+        day = day.coerceAtMost(availableDays.last())
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = SurfaceWhite
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(Res.string.blood_pressure_date_dialog_title),
+                        color = TextDarkCharcoal,
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            tint = TextDarkCharcoal,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DialogSectionLabel(
+                        icon = Icons.Default.AccessTime,
+                        text = stringResource(Res.string.blood_pressure_date_dialog_time),
+                        modifier = Modifier.weight(2f)
+                    )
+                    DialogSectionLabel(
+                        icon = Icons.Default.CalendarToday,
+                        text = stringResource(Res.string.blood_pressure_date_dialog_title),
+                        modifier = Modifier.weight(3f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DialogWheelPicker(
+                        values = (0..23).toList(),
+                        selectedValue = hour,
+                        valueLabel = { it.toString().padStart(2, '0') },
+                        onValueChange = { hour = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = ":",
+                        color = TextDarkCharcoal,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    DialogWheelPicker(
+                        values = (0..59).toList(),
+                        selectedValue = minute,
+                        valueLabel = { it.toString().padStart(2, '0') },
+                        onValueChange = { minute = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    DialogWheelPicker(
+                        values = availableDays,
+                        selectedValue = day,
+                        valueLabel = { it.toString() },
+                        onValueChange = { day = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    DialogWheelPicker(
+                        values = (1..12).toList(),
+                        selectedValue = month,
+                        valueLabel = { monthNumber -> monthLabels[monthNumber - 1] },
+                        onValueChange = { month = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    DialogWheelPicker(
+                        values = availableYears,
+                        selectedValue = year,
+                        valueLabel = { it.toString() },
+                        onValueChange = { year = it },
+                        modifier = Modifier.weight(1.25f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        border = BorderStroke(1.dp, DisabledGray),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDarkCharcoal)
+                    ) {
+                        Text(text = stringResource(Res.string.blood_pressure_date_dialog_cancel))
+                    }
+                    Button(
+                        onClick = {
+                            val selectedTimestamp = LocalDateTime(
+                                year = year,
+                                monthNumber = month,
+                                dayOfMonth = day,
+                                hour = hour,
+                                minute = minute
+                            ).toInstant(timeZone).toEpochMilliseconds()
+                            onConfirm(selectedTimestamp)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryRed,
+                            contentColor = SurfaceWhite
+                        )
+                    ) {
+                        Text(text = stringResource(Res.string.blood_pressure_date_dialog_confirm))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DialogSectionLabel(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = TextDarkCharcoal,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = text,
+            color = TextDarkCharcoal,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun <T> DialogWheelPicker(
+    values: List<T>,
+    selectedValue: T,
+    valueLabel: (T) -> String,
+    onValueChange: (T) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val selectedIndex = values.indexOf(selectedValue).coerceAtLeast(0)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex)
+    val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+    val centeredIndex by remember {
+        derivedStateOf { listState.firstVisibleItemIndex.coerceIn(0, values.lastIndex) }
+    }
+
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (!listState.isScrollInProgress) {
+            values.getOrNull(centeredIndex)?.let { centeredValue ->
+                if (centeredValue != selectedValue) onValueChange(centeredValue)
+            }
+        }
+    }
+    LaunchedEffect(selectedValue, values) {
+        val targetIndex = values.indexOf(selectedValue)
+        if (targetIndex >= 0 && listState.firstVisibleItemIndex != targetIndex) {
+            listState.animateScrollToItem(targetIndex)
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        flingBehavior = flingBehavior,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 35.dp),
+        modifier = modifier.height(105.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        items(values) { value ->
+            val isSelected = value == values[centeredIndex]
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(35.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(
+                        if (isSelected) BackgroundWhite else Color.Transparent
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = valueLabel(value),
+                    color = if (isSelected) TextDarkCharcoal else DisabledGray,
+                    fontSize = if (isSelected) 16.sp else 13.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                 )
             }
         }
@@ -408,7 +719,7 @@ private fun NoteCard(note: String, onNoteChange: (String) -> Unit) {
                     modifier = Modifier.size(24.dp)
                 )
                 Text(
-                    text = "Note",
+                    text = stringResource(Res.string.blood_pressure_note),
                     color = TextDarkCharcoal,
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
@@ -430,7 +741,7 @@ private fun NoteCard(note: String, onNoteChange: (String) -> Unit) {
                 decorationBox = { innerTextField ->
                     if (note.isBlank()) {
                         Text(
-                            text = "Type a note",
+                            text = stringResource(Res.string.blood_pressure_note_placeholder),
                             color = DisabledGray,
                             fontSize = 16.sp,
                             lineHeight = 24.sp
@@ -446,11 +757,57 @@ private fun NoteCard(note: String, onNoteChange: (String) -> Unit) {
 @Composable
 private fun BloodPressureInfoCard(level: BloodPressureLevel) {
     val rows = listOf(
-        Triple(BloodPressureLevel.HYPOTENSION, "Hypotension", "SYS<90 OR DIA <60"),
-        Triple(BloodPressureLevel.NORMAL, "Normal", "SYS 90-119 & DIA 60-79"),
-        Triple(BloodPressureLevel.HYPERTENSION_STAGE_1, "Hypertension Stage 1", "SYS 130-139 & DIA 80-89"),
-        Triple(BloodPressureLevel.HYPERTENSION_STAGE_2, "Hypertension Stage 2", "SYS 140-180 & DIA 90-120"),
-        Triple(BloodPressureLevel.HYPERTENSIVE_CRISIS, "Hypertensive Crisis", "SYS >180 OR DIA >120")
+        BloodPressureLevelRow(
+            level = BloodPressureLevel.HYPOTENSION,
+            label = stringResource(Res.string.blood_pressure_level_hypotension),
+            condition = stringResource(
+                Res.string.blood_pressure_condition_hypotension,
+                BloodPressureThresholds.HYPOTENSION_SYSTOLIC_MAX,
+                BloodPressureThresholds.HYPOTENSION_DIASTOLIC_MAX
+            )
+        ),
+        BloodPressureLevelRow(
+            level = BloodPressureLevel.NORMAL,
+            label = stringResource(Res.string.blood_pressure_level_normal),
+            condition = stringResource(
+                Res.string.blood_pressure_condition_normal,
+                BloodPressureThresholds.NORMAL_SYSTOLIC_MIN,
+                BloodPressureThresholds.NORMAL_SYSTOLIC_MAX,
+                BloodPressureThresholds.NORMAL_DIASTOLIC_MIN,
+                BloodPressureThresholds.NORMAL_DIASTOLIC_MAX
+            )
+        ),
+        BloodPressureLevelRow(
+            level = BloodPressureLevel.HYPERTENSION_STAGE_1,
+            label = stringResource(Res.string.blood_pressure_level_stage_1),
+            condition = stringResource(
+                Res.string.blood_pressure_condition_stage_1,
+                BloodPressureThresholds.STAGE_1_SYSTOLIC_MIN,
+                BloodPressureThresholds.STAGE_1_SYSTOLIC_MAX,
+                BloodPressureThresholds.STAGE_1_DIASTOLIC_MIN,
+                BloodPressureThresholds.STAGE_1_DIASTOLIC_MAX
+            )
+        ),
+        BloodPressureLevelRow(
+            level = BloodPressureLevel.HYPERTENSION_STAGE_2,
+            label = stringResource(Res.string.blood_pressure_level_stage_2),
+            condition = stringResource(
+                Res.string.blood_pressure_condition_stage_2,
+                BloodPressureThresholds.STAGE_2_SYSTOLIC_MIN,
+                BloodPressureThresholds.STAGE_2_SYSTOLIC_MAX,
+                BloodPressureThresholds.STAGE_2_DIASTOLIC_MIN,
+                BloodPressureThresholds.STAGE_2_DIASTOLIC_MAX
+            )
+        ),
+        BloodPressureLevelRow(
+            level = BloodPressureLevel.HYPERTENSIVE_CRISIS,
+            label = stringResource(Res.string.blood_pressure_level_crisis),
+            condition = stringResource(
+                Res.string.blood_pressure_condition_crisis,
+                BloodPressureThresholds.CRISIS_SYSTOLIC_MIN,
+                BloodPressureThresholds.CRISIS_DIASTOLIC_MIN
+            )
+        )
     )
     val colors = mapOf(
         BloodPressureLevel.HYPOTENSION to BloodPressureHypotension,
@@ -473,7 +830,7 @@ private fun BloodPressureInfoCard(level: BloodPressureLevel) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = rows.first { it.first == level }.second,
+                text = rows.first { it.level == level }.label,
                 color = TextDarkCharcoal,
                 fontSize = 14.sp,
                 lineHeight = 22.sp,
@@ -500,7 +857,7 @@ private fun BloodPressureInfoCard(level: BloodPressureLevel) {
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            rows.forEach { (rowLevel, label, condition) ->
+            rows.forEach { row ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -509,18 +866,18 @@ private fun BloodPressureInfoCard(level: BloodPressureLevel) {
                         modifier = Modifier
                             .size(7.dp)
                             .clip(RoundedCornerShape(90.dp))
-                            .background(colors.getValue(rowLevel))
+                            .background(colors.getValue(row.level))
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = label,
+                        text = row.label,
                         color = TextGray,
                         fontSize = 12.sp,
                         lineHeight = 18.sp,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        text = condition,
+                        text = row.condition,
                         color = TextGray,
                         fontSize = 12.sp,
                         lineHeight = 18.sp
@@ -530,6 +887,12 @@ private fun BloodPressureInfoCard(level: BloodPressureLevel) {
         }
     }
 }
+
+private data class BloodPressureLevelRow(
+    val level: BloodPressureLevel,
+    val label: String,
+    val condition: String
+)
 
 @Composable
 private fun SaveBar(enabled: Boolean, onSave: () -> Unit) {
@@ -550,7 +913,7 @@ private fun SaveBar(enabled: Boolean, onSave: () -> Unit) {
             contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 12.dp)
         ) {
             Text(
-                text = "Save",
+                text = stringResource(Res.string.blood_pressure_save),
                 color = SurfaceWhite,
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
@@ -560,12 +923,42 @@ private fun SaveBar(enabled: Boolean, onSave: () -> Unit) {
     }
 }
 
-private fun formatBloodPressureDate(timestamp: Long): String {
+@Composable
+private fun monthLabel(monthNumber: Int): String =
+    stringResource(
+        when (monthNumber) {
+            1 -> Res.string.month_jan
+            2 -> Res.string.month_feb
+            3 -> Res.string.month_mar
+            4 -> Res.string.month_apr
+            5 -> Res.string.month_may
+            6 -> Res.string.month_jun
+            7 -> Res.string.month_jul
+            8 -> Res.string.month_aug
+            9 -> Res.string.month_sep
+            10 -> Res.string.month_oct
+            11 -> Res.string.month_nov
+            else -> Res.string.month_dec
+        }
+    )
+
+private fun daysInMonth(month: Int, year: Int): Int =
+    when (month) {
+        2 -> if (isLeapYear(year)) 29 else 28
+        4, 6, 9, 11 -> 30
+        else -> 31
+    }
+
+private fun isLeapYear(year: Int): Boolean =
+    year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)
+
+private fun formatBloodPressureDate(timestamp: Long, monthLabel: String): String {
     val dateTime = Instant.fromEpochMilliseconds(timestamp)
         .toLocalDateTime(TimeZone.currentSystemDefault())
-    val month = dateTime.month.name.lowercase().take(3).replaceFirstChar { it.uppercase() }
     val day = dateTime.dayOfMonth.toString().padStart(2, '0')
     val hour = dateTime.hour.toString().padStart(2, '0')
     val minute = dateTime.minute.toString().padStart(2, '0')
-    return "$month $day,${dateTime.year} | $hour:$minute"
+    return "$monthLabel $day,${dateTime.year} | $hour:$minute"
 }
+
+private const val DATE_YEAR_RANGE = 5

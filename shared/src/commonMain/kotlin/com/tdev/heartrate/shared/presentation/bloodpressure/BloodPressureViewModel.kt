@@ -1,6 +1,9 @@
 package com.tdev.heartrate.shared.presentation.bloodpressure
 
 import androidx.lifecycle.viewModelScope
+import com.tdev.heartrate.shared.domain.model.BloodPressureLevel
+import com.tdev.heartrate.shared.domain.model.BloodPressureInputConstraints
+import com.tdev.heartrate.shared.domain.model.classifyBloodPressure
 import com.tdev.heartrate.shared.domain.usecase.AddBloodPressureRecordUseCase
 import com.tdev.heartrate.shared.domain.utils.getCurrentTimeMillis
 import com.tdev.heartrate.shared.presentation.BaseViewModel
@@ -15,14 +18,17 @@ data class BloodPressureUiState(
     val note: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null
-)
+) {
+    val level: BloodPressureLevel
+        get() = classifyBloodPressure(systolic = systolic, diastolic = diastolic)
+}
 
 sealed interface BloodPressureIntent {
     data class UpdateSystolic(val value: Int) : BloodPressureIntent
     data class UpdateDiastolic(val value: Int) : BloodPressureIntent
     data class UpdatePulse(val value: Int) : BloodPressureIntent
+    data class UpdateTimestamp(val value: Long) : BloodPressureIntent
     data class UpdateNote(val value: String) : BloodPressureIntent
-    data object RefreshTimestamp : BloodPressureIntent
     data object SaveRecord : BloodPressureIntent
 }
 
@@ -48,11 +54,11 @@ class BloodPressureViewModel(
             is BloodPressureIntent.UpdatePulse ->
                 _uiState.update { it.copy(pulse = intent.value, errorMessage = null) }
 
+            is BloodPressureIntent.UpdateTimestamp ->
+                _uiState.update { it.copy(timestamp = intent.value, errorMessage = null) }
+
             is BloodPressureIntent.UpdateNote ->
                 _uiState.update { it.copy(note = intent.value) }
-
-            BloodPressureIntent.RefreshTimestamp ->
-                _uiState.update { it.copy(timestamp = getCurrentTimeMillis()) }
 
             BloodPressureIntent.SaveRecord -> saveRecord()
         }
@@ -74,6 +80,7 @@ class BloodPressureViewModel(
                     systolic = state.systolic,
                     diastolic = state.diastolic,
                     pulse = state.pulse,
+                    timestamp = state.timestamp,
                     note = state.note.ifBlank { null }
                 )
                 emitSideEffect(BloodPressureSideEffect.NavigateBack)
@@ -89,9 +96,18 @@ class BloodPressureViewModel(
 
     private fun validate(state: BloodPressureUiState): String? =
         when {
-            state.systolic !in 40..250 -> "Systolic must be between 40 and 250"
-            state.diastolic !in 20..150 -> "Diastolic must be between 20 and 150"
-            state.pulse !in 30..250 -> "Pulse must be between 30 and 250"
+            state.systolic !in BloodPressureInputConstraints.SYSTOLIC_RANGE ->
+                "Systolic must be between ${BloodPressureInputConstraints.SYSTOLIC_RANGE.first} " +
+                    "and ${BloodPressureInputConstraints.SYSTOLIC_RANGE.last}"
+
+            state.diastolic !in BloodPressureInputConstraints.DIASTOLIC_RANGE ->
+                "Diastolic must be between ${BloodPressureInputConstraints.DIASTOLIC_RANGE.first} " +
+                    "and ${BloodPressureInputConstraints.DIASTOLIC_RANGE.last}"
+
+            state.pulse !in BloodPressureInputConstraints.PULSE_RANGE ->
+                "Pulse must be between ${BloodPressureInputConstraints.PULSE_RANGE.first} " +
+                    "and ${BloodPressureInputConstraints.PULSE_RANGE.last}"
+
             else -> null
         }
 }

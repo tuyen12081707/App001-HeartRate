@@ -17,11 +17,51 @@ enum class BloodPressureLevel {
     HYPERTENSIVE_CRISIS
 }
 
-fun BloodPressureRecord.level(): BloodPressureLevel =
+object BloodPressureThresholds {
+    const val HYPOTENSION_SYSTOLIC_MAX = 89
+    const val HYPOTENSION_DIASTOLIC_MAX = 59
+    const val NORMAL_SYSTOLIC_MIN = 90
+    const val NORMAL_SYSTOLIC_MAX = 129
+    const val NORMAL_DIASTOLIC_MIN = 60
+    const val NORMAL_DIASTOLIC_MAX = 79
+    const val STAGE_1_SYSTOLIC_MIN = 130
+    const val STAGE_1_SYSTOLIC_MAX = 139
+    const val STAGE_1_DIASTOLIC_MIN = 80
+    const val STAGE_1_DIASTOLIC_MAX = 89
+    const val STAGE_2_SYSTOLIC_MIN = 140
+    const val STAGE_2_SYSTOLIC_MAX = 180
+    const val STAGE_2_DIASTOLIC_MIN = 90
+    const val STAGE_2_DIASTOLIC_MAX = 120
+    const val CRISIS_SYSTOLIC_MIN = 181
+    const val CRISIS_DIASTOLIC_MIN = 121
+}
+
+object BloodPressureInputConstraints {
+    val SYSTOLIC_RANGE = 40..250
+    val DIASTOLIC_RANGE = 20..150
+    val PULSE_RANGE = 30..250
+}
+
+fun classifyBloodPressure(systolic: Int, diastolic: Int): BloodPressureLevel =
     when {
-        systolic < 90 || diastolic < 60 -> BloodPressureLevel.HYPOTENSION
-        systolic > 180 || diastolic > 120 -> BloodPressureLevel.HYPERTENSIVE_CRISIS
-        systolic >= 140 || diastolic >= 90 -> BloodPressureLevel.HYPERTENSION_STAGE_2
-        systolic >= 130 || diastolic >= 80 -> BloodPressureLevel.HYPERTENSION_STAGE_1
+        systolic >= BloodPressureThresholds.CRISIS_SYSTOLIC_MIN ||
+            diastolic >= BloodPressureThresholds.CRISIS_DIASTOLIC_MIN ->
+            BloodPressureLevel.HYPERTENSIVE_CRISIS
+
+        systolic >= BloodPressureThresholds.STAGE_2_SYSTOLIC_MIN ||
+            diastolic >= BloodPressureThresholds.STAGE_2_DIASTOLIC_MIN ->
+            BloodPressureLevel.HYPERTENSION_STAGE_2
+
+        systolic >= BloodPressureThresholds.STAGE_1_SYSTOLIC_MIN ||
+            diastolic >= BloodPressureThresholds.STAGE_1_DIASTOLIC_MIN ->
+            BloodPressureLevel.HYPERTENSION_STAGE_1
+
+        systolic <= BloodPressureThresholds.HYPOTENSION_SYSTOLIC_MAX ||
+            diastolic <= BloodPressureThresholds.HYPOTENSION_DIASTOLIC_MAX ->
+            BloodPressureLevel.HYPOTENSION
+
         else -> BloodPressureLevel.NORMAL
     }
+
+fun BloodPressureRecord.level(): BloodPressureLevel =
+    classifyBloodPressure(systolic = systolic, diastolic = diastolic)
