@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flow to Design"
+  short_description: "Quản lý flow và UI spec bằng file"
+  default_prompt: "Use $flow-to-design to turn this feature flow into versioned design files."

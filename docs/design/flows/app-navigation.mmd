@@ -1,0 +1,33 @@
+flowchart TD
+  DISCLAIMER[Disclaimer] -->|Đồng ý| DASHBOARD[Dashboard]
+
+  DASHBOARD -->|Tab| HISTORY[History]
+  DASHBOARD -->|Tab| NEWS[News]
+  DASHBOARD -->|Tab| PROFILE[Profile]
+  HISTORY -->|Tab| DASHBOARD
+  HISTORY -->|Tab| NEWS
+  HISTORY -->|Tab| PROFILE
+  NEWS -->|Tab| DASHBOARD
+  NEWS -->|Tab| HISTORY
+  NEWS -->|Tab| PROFILE
+  PROFILE -->|Tab| DASHBOARD
+  PROFILE -->|Tab| HISTORY
+  PROFILE -->|Tab| NEWS
+
+  DASHBOARD -->|Thêm nhịp tim| ADD_RECORD[Record editor]
+  DASHBOARD -->|Thêm huyết áp| BLOOD_PRESSURE[Blood pressure record]
+  NEWS -->|Thêm nhịp tim| ADD_RECORD
+  ADD_RECORD -->|Back| DASHBOARD
+  ADD_RECORD -->|Mở camera| CAMERA[Camera measurement]
+  CAMERA -->|Back| ADD_RECORD
+  CAMERA -->|Đo xong; bpm: Int| ADD_RECORD
+  CAMERA -->|Đo thất bại| FAILED_SCAN[Failed scan]
+  FAILED_SCAN -->|Thử lại| CAMERA
+  FAILED_SCAN -->|Về trang chủ| DASHBOARD
+  HISTORY -->|Chạm bản ghi [Planned]; recordId: Long| ADD_RECORD
+  ADD_RECORD -->|Tạo/cập nhật thành công| RESULT[Result]
+  RESULT -->|Về trang chủ| DASHBOARD
+  RESULT -->|Đo lại| ADD_RECORD
+  BLOOD_PRESSURE -->|Back| DASHBOARD
+  NEWS -->|Mở bài viết; url: String| NEWS_DETAIL[News detail]
+  NEWS_DETAIL -->|Back| NEWS
