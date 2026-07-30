@@ -5,12 +5,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import com.tdev.heartrate.shared.presentation.theme.AppTheme
 import com.tdev.heartrate.shared.presentation.components.CustomBottomBar
@@ -26,9 +22,13 @@ import androidx.compose.ui.Modifier
 import app001heartrate.shared.generated.resources.Res
 import app001heartrate.shared.generated.resources.tab_dashboard
 import app001heartrate.shared.generated.resources.tab_history
+import app001heartrate.shared.generated.resources.tab_news
+import app001heartrate.shared.generated.resources.tab_settings
 import org.jetbrains.compose.resources.stringResource
 import com.tdev.heartrate.shared.presentation.add.AddRecordScreen
 import com.tdev.heartrate.shared.presentation.add.AddRecordViewModel
+import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureScreen
+import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewModel
 import com.tdev.heartrate.shared.presentation.dashboard.DashboardScreen
 import com.tdev.heartrate.shared.presentation.dashboard.DashboardViewModel
 import com.tdev.heartrate.shared.presentation.history.HistoryScreen
@@ -54,7 +54,8 @@ import com.tdev.heartrate.shared.presentation.profile.ProfileScreen
 import com.tdev.heartrate.shared.presentation.result.ResultScreen
 
 enum class Screen {
-    DISCLAIMER, HOME, DASHBOARD, HISTORY, ADD_RECORD, CAMERA_MEASUREMENT, PROFILE, RESULT, FAILED_SCAN, NEWS_DETAIL
+    DISCLAIMER, HOME, DASHBOARD, HISTORY, ADD_RECORD, BLOOD_PRESSURE_RECORD,
+    CAMERA_MEASUREMENT, PROFILE, RESULT, FAILED_SCAN, NEWS_DETAIL
 }
 
 @Composable
@@ -83,7 +84,9 @@ fun App(appModule: Module = module { }) {
                 Scaffold(
                     bottomBar = {
                         val hideBottomBarScreens = listOf(
-                            Screen.DISCLAIMER, Screen.CAMERA_MEASUREMENT, Screen.ADD_RECORD, Screen.RESULT, Screen.FAILED_SCAN, Screen.NEWS_DETAIL
+                            Screen.DISCLAIMER, Screen.CAMERA_MEASUREMENT, Screen.ADD_RECORD,
+                            Screen.BLOOD_PRESSURE_RECORD, Screen.RESULT, Screen.FAILED_SCAN,
+                            Screen.NEWS_DETAIL
                         )
                         if (currentScreen !in hideBottomBarScreens) {
                             CustomBottomBar(
@@ -101,13 +104,13 @@ fun App(appModule: Module = module { }) {
                                         onClick = { currentScreen = Screen.HISTORY }
                                     ),
                                     BottomBarItem(
-                                        title = "News",
+                                        title = stringResource(Res.string.tab_news),
                                         icon = Icons.Default.Info,
                                         isSelected = currentScreen == Screen.HOME,
                                         onClick = { currentScreen = Screen.HOME }
                                     ),
                                     BottomBarItem(
-                                        title = "Profile",
+                                        title = stringResource(Res.string.tab_settings),
                                         icon = Icons.Default.Person,
                                         isSelected = currentScreen == Screen.PROFILE,
                                         onClick = { currentScreen = Screen.PROFILE }
@@ -116,15 +119,6 @@ fun App(appModule: Module = module { }) {
                             )
                         }
                     },
-                    floatingActionButton = {
-                        if (currentScreen == Screen.HOME || currentScreen == Screen.DASHBOARD || currentScreen == Screen.HISTORY) {
-                            FloatingActionButton(
-                                onClick = { currentScreen = Screen.ADD_RECORD }
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = "Add Record")
-                            }
-                        }
-                    }
                 ) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
                         when (currentScreen) {
@@ -144,7 +138,13 @@ fun App(appModule: Module = module { }) {
                             }
                             Screen.DASHBOARD -> {
                                 val viewModel = koinViewModel<DashboardViewModel>()
-                                DashboardScreen(viewModel = viewModel)
+                                DashboardScreen(
+                                    viewModel = viewModel,
+                                    onNavigateToAddRecord = { currentScreen = Screen.ADD_RECORD },
+                                    onNavigateToBloodPressure = {
+                                        currentScreen = Screen.BLOOD_PRESSURE_RECORD
+                                    }
+                                )
                             }
                             Screen.HISTORY -> {
                                 val viewModel = koinViewModel<HistoryViewModel>()
@@ -175,6 +175,13 @@ fun App(appModule: Module = module { }) {
                                     viewModel = viewModel,
                                     onNavigateBack = { currentScreen = Screen.DASHBOARD },
                                     onOpenCamera = { currentScreen = Screen.CAMERA_MEASUREMENT }
+                                )
+                            }
+                            Screen.BLOOD_PRESSURE_RECORD -> {
+                                val viewModel = koinViewModel<BloodPressureViewModel>()
+                                BloodPressureScreen(
+                                    viewModel = viewModel,
+                                    onNavigateBack = { currentScreen = Screen.DASHBOARD }
                                 )
                             }
                             Screen.CAMERA_MEASUREMENT -> {

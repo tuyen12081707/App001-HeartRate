@@ -1,20 +1,16 @@
 package com.tdev.heartrate.shared.presentation.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,10 +21,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tdev.heartrate.shared.presentation.theme.DividerGray
 
 data class BottomBarItem(
     val title: String,
@@ -44,16 +39,17 @@ fun CustomBottomBar(
 ) {
     Surface(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        shape = RoundedCornerShape(24.dp),
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp
+        border = BorderStroke(1.dp, DividerGray),
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .height(72.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -66,51 +62,32 @@ fun CustomBottomBar(
 
 @Composable
 private fun BottomBarItemView(item: BottomBarItem) {
-    val scale by animateFloatAsState(
-        targetValue = if (item.isSelected) 1.05f else 1.0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
-    )
-
     val color by animateColorAsState(
         targetValue = if (item.isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         label = "color"
     )
 
-    val backgroundColor by animateColorAsState(
-        targetValue = if (item.isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else androidx.compose.ui.graphics.Color.Transparent,
-        label = "backgroundColor"
-    )
-
-    Box(
+    Column(
         modifier = Modifier
-            .scale(scale)
-            .background(backgroundColor, RoundedCornerShape(100))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = item.onClick
             )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.title,
-                tint = color
-            )
-            AnimatedVisibility(visible = item.isSelected) {
-                Row {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = item.title,
-                        color = color,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
+        Icon(
+            imageVector = item.icon,
+            contentDescription = item.title,
+            tint = color
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = item.title,
+            color = color,
+            style = MaterialTheme.typography.labelSmall
+        )
     }
 }

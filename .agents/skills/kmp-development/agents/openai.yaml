@@ -1,0 +1,4 @@
+interface:
+  display_name: "KMP Development"
+  short_description: "Chuẩn hóa phát triển Kotlin Multiplatform"
+  default_prompt: "Dùng $kmp-development để lập plan và triển khai tính năng KMP theo chuẩn App001HeartRate."

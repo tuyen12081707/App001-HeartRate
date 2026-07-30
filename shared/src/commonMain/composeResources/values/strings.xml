@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App & Navigation -->
-    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_dashboard">Home</string>
     <string name="tab_history">History</string>
+    <string name="tab_news">News</string>
+    <string name="tab_settings">Setting</string>
     <string name="bpm_unit">BPM</string>
+
+    <!-- Home Screen -->
+    <string name="home_good_day">Have a good day!</string>
+    <string name="home_feel_today">How do you feel today?</string>
+    <string name="home_heart_rate">Heart rate</string>
+    <string name="home_blood_pressure">Blood Pressure</string>
+    <string name="home_blood_sugar">Blood sugar</string>
+    <string name="action_add">Add</string>
 
     <!-- Disclaimer Screen -->
     <string name="disclaimer_title">Disclaimer</string>
@@ -16,15 +26,22 @@
     <string name="history_delete">Delete</string>
 
     <!-- Add Record Screen -->
-    <string name="add_record_title">Add Heart Rate</string>
+    <string name="add_record_title">New Record</string>
     <string name="add_record_bpm_label">Heart Rate (BPM)</string>
-    <string name="add_record_body_state">Body State:</string>
-    <string name="add_record_note_label">Note (Optional)</string>
+    <string name="add_record_body_state">Body state</string>
+    <string name="add_record_note_label">Note</string>
+    <string name="add_record_note_placeholder">Type a note</string>
+    <string name="add_record_camera_action">Measure with camera</string>
     <string name="add_record_save_button">Save</string>
     <string name="add_record_error_invalid">Invalid BPM</string>
     <string name="add_record_error_range">BPM must be between 30 and 250</string>
     <string name="add_record_success">Saved successfully!</string>
     <string name="add_record_error_saving">Error saving data</string>
+    <string name="body_state_resting">Resting</string>
+    <string name="body_state_exercising">Exercising</string>
+    <string name="body_state_sleeping">Sleeping</string>
+    <string name="body_state_after_waking">After waking</string>
+    <string name="body_state_before_bed">Before bed</string>
 
     <!-- Dashboard Screen -->
     <string name="dashboard_title">Statistics</string>

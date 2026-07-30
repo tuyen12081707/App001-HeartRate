@@ -22,3 +22,19 @@ SELECT * FROM HeartRateEntity ORDER BY timestamp DESC;
 
 getAverageBpm:
 SELECT AVG(bpm) FROM HeartRateEntity;
+
+CREATE TABLE BloodPressureEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    systolic INTEGER NOT NULL,
+    diastolic INTEGER NOT NULL,
+    pulse INTEGER NOT NULL,
+    timestamp INTEGER NOT NULL,
+    note TEXT
+);
+
+insertBloodPressureRecord:
+INSERT INTO BloodPressureEntity(systolic, diastolic, pulse, timestamp, note)
+VALUES (?, ?, ?, ?, ?);
+
+getAllBloodPressureRecords:
+SELECT * FROM BloodPressureEntity ORDER BY timestamp DESC;

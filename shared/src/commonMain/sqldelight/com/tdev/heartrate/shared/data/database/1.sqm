@@ -1,0 +1,8 @@
+CREATE TABLE BloodPressureEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    systolic INTEGER NOT NULL,
+    diastolic INTEGER NOT NULL,
+    pulse INTEGER NOT NULL,
+    timestamp INTEGER NOT NULL,
+    note TEXT
+);

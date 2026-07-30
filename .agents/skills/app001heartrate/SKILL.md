@@ -1,11 +1,11 @@
 ---
 name: app001heartrate
-description: Skill chuyên biệt cho dự án App001HeartRate. Cung cấp các SOP (Standard Operating Procedures) cho AI tự động setup code API, UI, Database theo chuẩn của dự án.
+description: Tài liệu recipe và constraint kỹ thuật cho App001HeartRate; tham chiếu khi task cần API, UI, database, sensor hoặc DI cụ thể.
 ---
 
 # App001HeartRate — Skill Hướng Dẫn AI
 
-Skill này chứa các kịch bản cụ thể, pattern code mẫu, và quy tắc bắt buộc khi làm việc với dự án **App001HeartRate (KMP)**. AI phải đọc toàn bộ skill này trước khi thực hiện bất kỳ yêu cầu nào.
+Tài liệu này chứa các kịch bản cụ thể, pattern code mẫu và constraint kỹ thuật của **App001HeartRate (KMP)**. Policy vận hành chung nằm duy nhất tại `../kmp-development/SKILL.md`; chỉ đọc các phần recipe liên quan tới task hiện tại.
 
 ---
 
@@ -355,7 +355,7 @@ actual class XxxSensor {
 
 ---
 
-## ✅ Quy Tắc Bắt Buộc (Agent Rules)
+## ✅ Constraint Kỹ Thuật Theo Project
 
 1. **KHÔNG** dùng `android.util.*`, `android.content.*` trong `commonMain/`
 2. **KHÔNG** viết code ra ngoài thư mục `App001HeartRate/`
@@ -363,7 +363,6 @@ actual class XxxSensor {
 4. **LUÔN** dùng `viewModelScope.launch(dispatchers.io)` cho background work
 5. **LUÔN** đăng ký dependency mới vào đúng module trong `Koin.kt`
 6. **LUÔN** tạo Domain Model thuần Kotlin, không mix với DTO hoặc Entity
-7. **TỰ ĐỘNG** thực hiện tất cả các bước SOP mà không cần hỏi lại
-8. **LUÔN** kế thừa `BaseViewModel<S, I, E>` khi tạo ViewModel mới
-9. **KHÔNG** hard-code màu hex — dùng `MaterialTheme.colorScheme.*` hoặc constants từ `Color.kt`
-10. SQLDelight query: đặt tên theo format `camelCase:` (ví dụ `getRecordById:`)
+7. **LUÔN** kế thừa `BaseViewModel<S, I, E>` khi tạo ViewModel mới
+8. **KHÔNG** hard-code màu hex — dùng `MaterialTheme.colorScheme.*` hoặc constants từ `Color.kt`
+9. SQLDelight query: đặt tên theo format `camelCase:` (ví dụ `getRecordById:`)

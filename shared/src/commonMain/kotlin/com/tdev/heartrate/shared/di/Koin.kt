@@ -4,13 +4,17 @@ import app.cash.sqldelight.EnumColumnAdapter
 import com.tdev.heartrate.shared.data.database.HeartRateDatabase
 import com.tdev.heartrate.shared.data.database.HeartRateEntity
 import com.tdev.heartrate.shared.data.repository.HeartRateRepositoryImpl
+import com.tdev.heartrate.shared.data.repository.BloodPressureRepositoryImpl
 import com.tdev.heartrate.shared.domain.repository.HeartRateRepository
+import com.tdev.heartrate.shared.domain.repository.BloodPressureRepository
+import com.tdev.heartrate.shared.domain.usecase.AddBloodPressureRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.AddHeartRateRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.DeleteHeartRateRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.GetHeartRateHistoryUseCase
 import com.tdev.heartrate.shared.domain.usecase.GetHeartRateStatsUseCase
 import com.tdev.heartrate.shared.domain.utils.provideAppDispatchers
 import com.tdev.heartrate.shared.presentation.add.AddRecordViewModel
+import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewModel
 import com.tdev.heartrate.shared.presentation.dashboard.DashboardViewModel
 import com.tdev.heartrate.shared.presentation.history.HistoryViewModel
 import com.tdev.heartrate.shared.presentation.home.HomeViewModel
@@ -42,6 +46,7 @@ val networkModule = module {
 }
 
 val domainModule = module {
+    factory { AddBloodPressureRecordUseCase(get()) }
     factory { AddHeartRateRecordUseCase(get()) }
     factory { GetHeartRateHistoryUseCase(get()) }
     factory { DeleteHeartRateRecordUseCase(get()) }
@@ -62,10 +67,12 @@ val dataModule = module {
         ) 
     }
     single<HeartRateRepository> { HeartRateRepositoryImpl(get(), get()) }
+    single<BloodPressureRepository> { BloodPressureRepositoryImpl(get(), get()) }
     single<NewsRepository> { NewsRepositoryImpl(get()) }
 }
 
 val presentationModule = module {
+    factory { BloodPressureViewModel(get()) }
     factory { HistoryViewModel(get(), get()) }
     factory { AddRecordViewModel(get()) }
     factory { DashboardViewModel(get()) }
@@ -74,5 +81,4 @@ val presentationModule = module {
 }
 
 expect val platformModule: Module
-
 

@@ -23,6 +23,28 @@ description: "Bản đồ sống" của dự án App001HeartRate — toàn bộ 
 | DI | Koin (`networkModule`, `dataModule`, `domainModule`, `presentationModule`, `platformModule`) |
 | Navigation | State-based: `enum class Screen` + `currentScreen` state trong `App.kt` |
 
+### Android Compose Resources workaround (AGP 9)
+
+`shared` dùng `com.android.kotlin.multiplatform.library` cùng AGP 9. Compose Resources
+vẫn generate `strings.commonMain.cvr` nhưng AGP không tự package nó vào APK, gây crash:
+`MissingResourceException: composeResources/.../strings.commonMain.cvr`.
+
+- Trong `shared/build.gradle.kts`, giữ Android KMP target
+  `com.android.kotlin.multiplatform.library` và `androidResources.enable = true`.
+- Trong `androidApp/build.gradle.kts`, task `copySharedComposeResourcesToJavaResources` copy
+  `shared/build/generated/compose/resourceGenerator/preparedResources/commonMain/composeResources`
+  vào Java-resources root `composeResources/app001heartrate.shared.generated.resources/`.
+  Compose Resources 1.6.11 dùng `ClassLoader.getResourceAsStream(path)` cho strings,
+  vì vậy không được đặt file dưới `assets/`.
+- Task được đăng ký qua `androidComponents.onVariants { variant.sources.resources
+  .addGeneratedSourceDirectory(...) }`; không dùng `sourceSets.assets.srcDir(Provider)`
+  vì AGP 9 cấm Provider ở SourceSet API.
+- Task dùng `FileSystemOperations` được inject; không gọi `Task.project` trong
+  `@TaskAction` để tương thích Gradle configuration cache.
+- Sau khi đổi resources/build logic, chạy `./gradlew clean :androidApp:assembleDebug`
+  rồi xác nhận APK có `composeResources/.../strings.commonMain.cvr` ở root, không
+  có prefix `assets/`, bằng `unzip -l`.
+
 ---
 
 ## 🗄️ Database — Hiện Trạng Thực Tế
@@ -37,6 +59,15 @@ CREATE TABLE HeartRateEntity (
     bodyState TEXT AS BodyState NOT NULL,
     note TEXT
 );
+
+CREATE TABLE BloodPressureEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    systolic INTEGER NOT NULL,
+    diastolic INTEGER NOT NULL,
+    pulse INTEGER NOT NULL,
+    timestamp INTEGER NOT NULL,
+    note TEXT
+);
 ```
 
 ### Queries đã có
@@ -46,6 +77,10 @@ CREATE TABLE HeartRateEntity (
 | `deleteRecord` | `DELETE FROM HeartRateEntity WHERE id = ?` |
 | `getAllRecords` | `SELECT * FROM HeartRateEntity ORDER BY timestamp DESC` |
 | `getAverageBpm` | `SELECT AVG(bpm) FROM HeartRateEntity` |
+| `insertBloodPressureRecord` | `INSERT INTO BloodPressureEntity(systolic, diastolic, pulse, timestamp, note) VALUES (?, ?, ?, ?, ?)` |
+| `getAllBloodPressureRecords` | `SELECT * FROM BloodPressureEntity ORDER BY timestamp DESC` |
+
+**Migration hiện có**: `1.sqm` tạo `BloodPressureEntity` cho database đã cài trước đó.
 
 ---
 
@@ -78,10 +113,14 @@ fun NewsDetailDto.toDomain(): NewsDetail
 ```kotlin
 data class HeartRateRecord(val id: Long = 0, val bpm: Int, val timestamp: Long, val measureType: MeasureType, val bodyState: BodyState, val note: String? = null)
 data class HeartRateStats(val averageBpm: Int = 0, val maxBpm: Int = 0, val minBpm: Int = 0, val totalRecords: Int = 0)
+data class BloodPressureRecord(val id: Long = 0, val systolic: Int, val diastolic: Int, val pulse: Int, val timestamp: Long, val note: String? = null)
 data class News(val title: String, val description: String, val urlToImage: String?, val url: String, val publishedAt: String)
 data class NewsDetail(val url: String, val content: String)  // kiểm tra file
 enum class MeasureType { MANUAL, CAMERA_SENSOR }
 enum class BodyState { RESTING, EXERCISING, SLEEPING, AFTER_WAKING_UP, BEFORE_BED }
+enum class BloodPressureLevel { HYPOTENSION, NORMAL, HYPERTENSION_STAGE_1, HYPERTENSION_STAGE_2, HYPERTENSIVE_CRISIS }
+
+fun BloodPressureRecord.level(): BloodPressureLevel
 ```
 
 ### Repository Interfaces (`domain/repository/`)
@@ -92,6 +131,11 @@ interface HeartRateRepository {
     suspend fun deleteRecord(id: Long)
     fun getAllRecords(): Flow<List<HeartRateRecord>>
     suspend fun getAverageBpm(): Double
+}
+
+interface BloodPressureRepository {
+    suspend fun insertRecord(record: BloodPressureRecord)
+    fun getAllRecords(): Flow<List<BloodPressureRecord>>
 }
 
 // NewsRepository.kt
@@ -105,6 +149,7 @@ interface NewsRepository {
 | Class | Constructor | invoke() signature |
 |-------|------------|-------------------|
 | `AddHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(bpm: Int, measureType: MeasureType = MANUAL, bodyState: BodyState, note: String? = null)` |
+| `AddBloodPressureRecordUseCase` | `(BloodPressureRepository)` | `suspend invoke(systolic: Int, diastolic: Int, pulse: Int, note: String? = null)` |
 | `GetHeartRateHistoryUseCase` | `(HeartRateRepository)` | `invoke(): Flow<List<HeartRateRecord>>` |
 | `DeleteHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(id: Long)` |
 | `GetHeartRateStatsUseCase` | `(HeartRateRepository)` | `invoke(): Flow<HeartRateStats>` |
@@ -134,6 +179,7 @@ abstract class BaseViewModel<S, I, E>(initialState: S) : ViewModel() {
 | `DashboardViewModel` | `DashboardUiState(stats, isLoading)` | `Unit` | `Unit` | `(GetHeartRateStatsUseCase)` |
 | `HistoryViewModel` | `HistoryUiState(isLoading, records, isEmpty)` | `HistoryIntent.DeleteRecord(id)` | `Unit` | `(GetHeartRateHistoryUseCase, DeleteHeartRateRecordUseCase)` |
 | `AddRecordViewModel` | `AddRecordUiState(bpm, bodyState, note, isLoading, errorMessage)` | `UpdateBpm/UpdateBodyState/UpdateNote/SaveRecord/ClearError` | `NavigateBack/NavigateToResult(bpm)/ShowSnackbar(message)` | `(AddHeartRateRecordUseCase)` |
+| `BloodPressureViewModel` | `BloodPressureUiState(systolic, diastolic, pulse, timestamp, note, isLoading, errorMessage)` | `UpdateSystolic/UpdateDiastolic/UpdatePulse/UpdateNote/RefreshTimestamp/SaveRecord` | `NavigateBack/ShowError(message)` | `(AddBloodPressureRecordUseCase)` |
 | `NewsDetailViewModel` | — | — | — | `(GetNewsDetailUseCase)` |
 
 ### Screens đã có & navigation params
@@ -141,14 +187,20 @@ abstract class BaseViewModel<S, I, E>(initialState: S) : ViewModel() {
 |--------|------|---------------------|
 | `DisclaimerScreen` | `disclaimer/` | `onAgree: () -> Unit` |
 | `HomeScreen` | `home/` | `onNavigateToAddRecord`, `onNavigateToNewsDetail(url)` |
-| `DashboardScreen` | `dashboard/` | viewModel param trực tiếp |
+| `DashboardScreen` | `dashboard/` | `viewModel`, `onNavigateToAddRecord`, `onNavigateToBloodPressure`; Home UI theo Figma node `27:8823` |
 | `HistoryScreen` | `history/` | viewModel param trực tiếp |
 | `AddRecordScreen` | `add/` | `onNavigateBack`, `onOpenCamera` |
+| `BloodPressureScreen` | `bloodpressure/` | `viewModel`, `onNavigateBack`; Figma node `33:2705` |
 | `CameraMeasurementScreen` | `camera/` | `onNavigateBack`, `onMeasurementCompleted(bpm)`, `onMeasurementFailed` |
 | `ProfileScreen` | `profile/` | không có |
 | `ResultScreen` | `result/` | `bpm: Int`, `bodyState: String`, `onGoHome`, `onMeasureAgain` |
 | `FailedScanScreen` | `camera/` | `onTryAgain`, `onGoHome` |
 | `NewsDetailScreen` | `newsdetail/` | `url: String`, `onNavigateBack` |
+
+**Home UI assets** (`commonMain/composeResources/drawable/`):
+`home_heart_wave.png`, `home_heart.png`, `home_blood_pressure.png`,
+`home_blood_sugar.png`. Card Heart rate mở `ADD_RECORD`; card Blood Pressure mở
+`BLOOD_PRESSURE_RECORD`; Blood sugar hiện chỉ là UI placeholder.
 
 ---
 
@@ -164,12 +216,14 @@ val networkModule = module {
 val dataModule = module {
     single { HeartRateDatabase(driver=get(), HeartRateEntityAdapter=HeartRateEntity.Adapter(measureTypeAdapter=EnumColumnAdapter(), bodyStateAdapter=EnumColumnAdapter())) }
     single<HeartRateRepository> { HeartRateRepositoryImpl(get(), get()) }
+    single<BloodPressureRepository> { BloodPressureRepositoryImpl(get(), get()) }
     single<NewsRepository> { NewsRepositoryImpl(get()) }
     // ← THÊM Repository mới ở đây
 }
 
 val domainModule = module {
     factory { AddHeartRateRecordUseCase(get()) }
+    factory { AddBloodPressureRecordUseCase(get()) }
     factory { GetHeartRateHistoryUseCase(get()) }
     factory { DeleteHeartRateRecordUseCase(get()) }
     factory { GetHeartRateStatsUseCase(get()) }
@@ -182,6 +236,7 @@ val domainModule = module {
 val presentationModule = module {
     factory { HistoryViewModel(get(), get()) }
     factory { AddRecordViewModel(get()) }
+    factory { BloodPressureViewModel(get()) }
     factory { DashboardViewModel(get()) }
     factory { HomeViewModel(get(), get()) }
     factory { NewsDetailViewModel(get()) }
@@ -198,7 +253,7 @@ expect val platformModule: Module   // Android: AndroidSqliteDriver + CameraHear
 ```kotlin
 enum class Screen {
     DISCLAIMER, HOME, DASHBOARD, HISTORY,
-    ADD_RECORD, CAMERA_MEASUREMENT, PROFILE,
+    ADD_RECORD, BLOOD_PRESSURE_RECORD, CAMERA_MEASUREMENT, PROFILE,
     RESULT, FAILED_SCAN, NEWS_DETAIL
     // ← THÊM màn hình mới ở đây
 }
@@ -210,7 +265,21 @@ enum class Screen {
 3. `HOME` (News) — icon: `Icons.Default.Info`
 4. `PROFILE` — icon: `Icons.Default.Person`
 
-**Screens ẩn bottom bar**: `DISCLAIMER, CAMERA_MEASUREMENT, ADD_RECORD, RESULT, FAILED_SCAN, NEWS_DETAIL`
+**Screens ẩn bottom bar**: `DISCLAIMER, CAMERA_MEASUREMENT, ADD_RECORD, BLOOD_PRESSURE_RECORD, RESULT, FAILED_SCAN, NEWS_DETAIL`
+
+**Flow huyết áp**: `DashboardScreen` card Blood Pressure →
+`Screen.BLOOD_PRESSURE_RECORD` → `BloodPressureScreen`; Back hoặc Save thành công
+quay về `Screen.DASHBOARD`.
+
+### Lịch sử triển khai — Blood Pressure SP005 (2026-07-30)
+
+Hoàn thành đầy đủ node Figma `33:2705`: domain model/level classification,
+repository/mapper/use case, SQLDelight entity/query/migration `1.sqm`,
+`BloodPressureViewModel`, `BloodPressureScreen`, Koin, navigation Dashboard và unit
+tests bằng fake repository/Flow. Validation đã pass:
+`:shared:compileAndroidMain`, `:shared:testAndroidHostTest`,
+`:shared:compileKotlinIosSimulatorArm64`, `:androidApp:assembleDebug`.
+APK debug: `androidApp/build/outputs/apk/debug/androidApp-debug.apk`.
 
 **Shared state trong App.kt**:
 ```kotlin
