@@ -20,6 +20,8 @@ context.
    một task được ở trạng thái `in_progress`.
 4. Tóm tắt ngắn plan: mục tiêu, file dự kiến, data flow, rủi ro và validation.
 5. Giữ thay đổi nhỏ, tương thích kiến trúc hiện tại; không thêm dependency lớn nếu chưa có lý do.
+6. Đọc `../../../BRAINSTORM.md` để lấy quyết định dài hạn và ý tưởng liên quan. Mục
+   `IDEA` chỉ là đề xuất, không được tự động đưa vào scope nếu user chưa duyệt.
 
 ## Quy tắc kiến trúc
 
@@ -127,6 +129,10 @@ context.
 Sau khi thêm class/file/flow mới, cập nhật `../project-context/SKILL.md` ở đúng mục
 liên quan. Ghi tên file, public signature, data flow và navigation/DI wiring; chỉ ghi
 thông tin đã kiểm chứng từ code.
+
+Sau khi user chốt một hướng sản phẩm/kỹ thuật hoặc task tạo ra ý tưởng cần giữ lại,
+cập nhật `../../../BRAINSTORM.md` với trạng thái `IDEA`, `DECIDED`, `IN_PROGRESS`
+hoặc `DONE`. Không ghi suy đoán như một quyết định đã duyệt.
 
 Rule mới chỉ được thêm vào skill này sau khi user chấp thuận rõ ràng.
 
