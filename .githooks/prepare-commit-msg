@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+commit_message_file="$1"
+if rg -qi '\b(decision|decided|chốt|quyết định|architecture|kiến trúc)\b' "$commit_message_file"; then
+  cat >> "$commit_message_file" <<'EOF'
+
+# Memory reminder: nếu commit này chứa quyết định dài hạn, ghi thêm vào .memory/decisions.md.
+EOF
+fi
+
