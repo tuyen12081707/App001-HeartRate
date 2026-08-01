@@ -6,6 +6,7 @@ import com.tdev.heartrate.shared.domain.usecase.GetDisclaimerStatusUseCase
 import com.tdev.heartrate.shared.domain.usecase.SeedDemoHeartRateUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.CancellationException
 
 class AppStartupCoordinator(
     private val appConfig: AppConfig,
@@ -21,6 +22,7 @@ class AppStartupCoordinator(
             }
             emit(DataState.Success(StartupData(consentAccepted = consentAccepted)))
         } catch (throwable: Exception) {
+            if (throwable is CancellationException) throw throwable
             emit(
                 DataState.Error(
                     message = throwable.message ?: throwable.toString(),

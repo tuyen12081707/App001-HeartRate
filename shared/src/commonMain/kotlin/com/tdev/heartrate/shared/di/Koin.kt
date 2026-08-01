@@ -32,6 +32,7 @@ import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewMod
 import com.tdev.heartrate.shared.presentation.dashboard.DashboardViewModel
 import com.tdev.heartrate.shared.presentation.history.HistoryViewModel
 import com.tdev.heartrate.shared.presentation.home.HomeViewModel
+import com.tdev.heartrate.shared.presentation.result.ResultViewModel
 import com.tdev.heartrate.shared.domain.usecase.GetNewsUseCase
 import com.tdev.heartrate.shared.domain.repository.NewsRepository
 import com.tdev.heartrate.shared.data.repository.NewsRepositoryImpl
@@ -104,6 +105,7 @@ val presentationModule = module {
     factory { HistoryViewModel(get(), get()) }
     factory { AddRecordViewModel(get()) }
     factory { DashboardViewModel(get()) }
+    factory { params -> ResultViewModel(get(), params.get()) }
     factory { HomeViewModel(get(), get()) }
     factory { com.tdev.heartrate.shared.presentation.newsdetail.NewsDetailViewModel(get()) }
 }

@@ -21,7 +21,7 @@ description: "Bản đồ sống" của dự án App001HeartRate — toàn bộ 
 | DB queries accessor | `database.heartRateDatabaseQueries` |
 | API base | Ktor `HttpClient` với `ContentNegotiation + kotlinx.json` |
 | DI | Koin (`networkModule`, `dataModule`, `domainModule`, `presentationModule`, `platformModule`) |
-| Navigation | State-based: `enum class Screen` + `currentScreen` state trong `App.kt` |
+| Navigation | Typed state-based routes via `AppNavigator`/`AppRoute` in `App.kt` |
 
 ### Android Compose Resources workaround (AGP 9)
 
@@ -211,9 +211,9 @@ abstract class BaseViewModel<S, I, E>(initialState: S) : ViewModel() {
 | ViewModel | UiState | Intent | SideEffect | Constructor |
 |-----------|---------|--------|------------|------------|
 | `HomeViewModel` | `HomeUiState` (Loading/Success/Error) | — | — | `(GetNewsUseCase, GetHeartRateHistoryUseCase)` |
-| `DashboardViewModel` | `DashboardUiState(stats, isLoading)` | `Unit` | `Unit` | `(GetHeartRateStatsUseCase)` |
-| `HistoryViewModel` | `HistoryUiState(isLoading, records, isEmpty)` | `HistoryIntent.DeleteRecord(id)` | `Unit` | `(GetHeartRateHistoryUseCase, DeleteHeartRateRecordUseCase)` |
-| `AddRecordViewModel` | `AddRecordUiState(bpm, bodyState, note, isLoading, errorMessage)` | `UpdateBpm/UpdateBodyState/UpdateNote/SaveRecord/ClearError` | `NavigateBack/NavigateToResult(bpm)/ShowSnackbar(message)` | `(AddHeartRateRecordUseCase)` |
+| `DashboardViewModel` | `DashboardUiState(data: DataState<DashboardData>)` | `Unit` | `Unit` | `(GetDashboardDataUseCase)` |
+| `HistoryViewModel` | `HistoryUiState(data: DataState<List<HeartRateRecord>>, deleteState: DataState<Long>)` | `HistoryIntent.DeleteRecord(id)` | `Unit` | `(GetHeartRateHistoryUseCase, DeleteHeartRateRecordUseCase)` |
+| `AddRecordViewModel` | `AddRecordUiState(bpm, bodyState, note, saveState: DataState<Long>, fieldErrors)` | `UpdateBpm/UpdateBodyState/UpdateNote/SaveRecord/ClearError` | `NavigateBack/NavigateToResult(recordId)/ShowSnackbar(message)` | `(AddHeartRateRecordUseCase)` |
 | `BloodPressureViewModel` | `BloodPressureUiState(systolic, diastolic, pulse, timestamp, note, isLoading, errorMessage)` + derived `level` | `UpdateSystolic/UpdateDiastolic/UpdatePulse/UpdateTimestamp/UpdateNote/SaveRecord` | `NavigateBack/ShowError(message)` | `(AddBloodPressureRecordUseCase)` |
 | `NewsDetailViewModel` | — | — | — | `(GetNewsDetailUseCase)` |
 
@@ -231,6 +231,12 @@ abstract class BaseViewModel<S, I, E>(initialState: S) : ViewModel() {
 | `ResultScreen` | `result/` | `bpm: Int`, `bodyState: String`, `onGoHome`, `onMeasureAgain` |
 | `FailedScanScreen` | `camera/` | `onTryAgain`, `onGoHome` |
 | `NewsDetailScreen` | `newsdetail/` | `url: String`, `onNavigateBack` |
+
+Typed navigation is defined in `presentation/navigation/`: `MainTab` (Dashboard,
+History, News, Profile), `AppRoute` (Disclaimer, Main(tab), AddHeartRate,
+Result(recordId), plus retained NewsDetail/BloodPressure/Camera/FailedScan routes),
+and `AppNavigator` (StateFlow route with stack-based navigate/back). `ResultViewModel`
+loads a persisted `recordId` and exposes `ResultUiState(data: DataState<HeartRateRecord>)`.
 
 **Home UI assets** (`commonMain/composeResources/drawable/`):
 `home_heart_wave.png`, `home_heart.png`, `home_blood_pressure.png`,
@@ -301,7 +307,7 @@ expect val platformModule: Module   // Android: AndroidSqliteDriver + CameraHear
 
 ---
 
-## 🗺️ Navigation — Screen Enum Thực Tế (App.kt)
+## 🗺️ Navigation — Typed routes (App.kt)
 
 ```kotlin
 enum class Screen {
