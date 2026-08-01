@@ -59,8 +59,13 @@ Add Record → Open Camera
 
 ## Acceptance criteria
 
-- [ ] Opening camera never starts CameraX without permission.
-- [ ] Denying permission never crashes or traps the user.
-- [ ] A successful camera BPM reaches Add Record as a prefilled value and is not saved until the user confirms.
-- [ ] Failure, retry, and back flows work without leaking the camera session.
-- [ ] Manual entry still works with no camera permission.
+- [x] Opening camera never starts CameraX without permission.
+- [ ] Denying permission never crashes or traps the user. (Physical-device verification pending.)
+- [x] A successful camera BPM reaches Add Record as a prefilled value and is not saved until the user confirms.
+- [ ] Failure, retry, and back flows work without leaking the camera session. (Physical-device verification pending.)
+- [x] Manual entry still works with no camera permission.
+
+## Verification log
+
+- 2026-08-02: `:shared:testAndroidHostTest`, `:shared:compileKotlinIosSimulatorArm64`, and `:androidApp:assembleDebug` passed.
+- 2026-08-02: `adb` is installed but no Android device is connected; permission-dialog and CameraX sensor checks remain pending on physical hardware.
