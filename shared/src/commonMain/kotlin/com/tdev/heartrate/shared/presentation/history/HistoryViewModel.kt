@@ -7,6 +7,7 @@ import com.tdev.heartrate.shared.domain.usecase.GetHeartRateHistoryUseCase
 import com.tdev.heartrate.shared.presentation.BaseViewModel
 import com.tdev.heartrate.shared.presentation.DataState
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -14,7 +15,8 @@ import kotlinx.coroutines.launch
 
 data class HistoryUiState(
     val data: DataState<List<HeartRateRecord>> = DataState.Idle,
-    val deleteState: DataState<Long> = DataState.Idle
+    val deleteState: DataState<Long> = DataState.Idle,
+    val deleteErrorRecordId: Long? = null
 ) {
     val isLoading: Boolean get() = data is DataState.Loading || data is DataState.Idle
     val records: List<HeartRateRecord> get() = (data as? DataState.Success)?.data.orEmpty()
@@ -30,13 +32,20 @@ class HistoryViewModel(
     private val deleteHeartRateRecordUseCase: DeleteHeartRateRecordUseCase
 ) : BaseViewModel<HistoryUiState, HistoryIntent, Unit>(HistoryUiState()) {
 
+    private var loadJob: Job? = null
+
     fun retry() {
-        _uiState.update { it.copy(data = DataState.Loading) }
+        load()
     }
 
     init {
-        _uiState.value = HistoryUiState(data = DataState.Loading)
-        viewModelScope.launch {
+        load()
+    }
+
+    private fun load() {
+        loadJob?.cancel()
+        _uiState.update { it.copy(data = DataState.Loading) }
+        loadJob = viewModelScope.launch {
             getHeartRateHistoryUseCase()
                 .map<List<HeartRateRecord>, DataState<List<HeartRateRecord>>> { DataState.Success(it) }
                 .catch { throwable ->
@@ -60,11 +69,11 @@ class HistoryViewModel(
             _uiState.update { it.copy(deleteState = DataState.Loading) }
             try {
                 deleteHeartRateRecordUseCase(id)
-                _uiState.update { it.copy(deleteState = DataState.Success(id)) }
+                _uiState.update { it.copy(deleteState = DataState.Success(id), deleteErrorRecordId = null) }
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) throw throwable
                 _uiState.update {
-                    it.copy(deleteState = DataState.Error(throwable.message ?: "Unable to delete record", throwable))
+                    it.copy(deleteState = DataState.Error(throwable.message ?: "Unable to delete record", throwable), deleteErrorRecordId = id)
                 }
             }
         }

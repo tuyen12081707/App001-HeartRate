@@ -33,6 +33,8 @@ import app001heartrate.shared.generated.resources.history_delete_confirm
 import app001heartrate.shared.generated.resources.history_delete_message
 import app001heartrate.shared.generated.resources.history_empty
 import app001heartrate.shared.generated.resources.history_retry
+import app001heartrate.shared.generated.resources.history_retry_delete
+import app001heartrate.shared.generated.resources.history_bpm_format
 import app001heartrate.shared.generated.resources.history_title
 import com.tdev.heartrate.shared.domain.model.HeartRateRecord
 import com.tdev.heartrate.shared.domain.utils.formatTimestamp
@@ -68,11 +70,22 @@ fun HistoryScreen(
                     EmptyState(stringResource(Res.string.history_empty), stringResource(Res.string.history_retry), onAction = viewModel::retry)
                 } else {
                     val groups = state.data.groupBy { formatTimestamp(it.timestamp).substringAfter(' ', "Unknown day") }
-                    LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        groups.forEach { (day, records) ->
-                            item(key = "header-$day") { Text(day, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary) }
-                            items(records, key = { it.id }) { record ->
-                                HistoryRecordRow(record) { pendingDelete = record }
+                    Column(Modifier.fillMaxSize()) {
+                        val deleteError = uiState.deleteState as? DataState.Error
+                        val failedId = uiState.deleteErrorRecordId
+                        if (deleteError != null && failedId != null) {
+                            FeatureErrorState(
+                                message = deleteError.message,
+                                actionLabel = stringResource(Res.string.history_retry_delete),
+                                onAction = { viewModel.onIntent(HistoryIntent.DeleteRecord(failedId)) }
+                            )
+                        }
+                        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            groups.forEach { (day, records) ->
+                                item(key = "header-$day") { Text(day, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary) }
+                                items(records, key = { it.id }) { record ->
+                                    HistoryRecordRow(record) { pendingDelete = record }
+                                }
                             }
                         }
                     }
@@ -87,7 +100,7 @@ private fun HistoryRecordRow(record: HeartRateRecord, onDelete: () -> Unit) {
     androidx.compose.material3.Card(Modifier.fillMaxWidth()) {
         androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("${record.bpm} BPM", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(Res.string.history_bpm_format, record.bpm), style = MaterialTheme.typography.titleLarge)
                 Text(record.bodyState.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(formatTimestamp(record.timestamp).substringBefore(' '), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

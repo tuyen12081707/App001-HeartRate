@@ -38,7 +38,6 @@ import com.tdev.heartrate.shared.presentation.AppStartupCoordinator
 import com.tdev.heartrate.shared.presentation.DataState
 import com.tdev.heartrate.shared.presentation.add.AddRecordIntent
 import com.tdev.heartrate.shared.presentation.add.AddRecordScreen
-import com.tdev.heartrate.shared.presentation.add.AddRecordSideEffect
 import com.tdev.heartrate.shared.presentation.add.AddRecordViewModel
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureScreen
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewModel
@@ -131,9 +130,6 @@ fun App(
                                 val viewModel = koinViewModel<AddRecordViewModel>()
                                 LaunchedEffect(viewModel) {
                                     viewModel.onIntent(AddRecordIntent.ResetForNewEntry)
-                                    viewModel.sideEffect.collect { effect ->
-                                        if (effect is AddRecordSideEffect.NavigateToResult) navigator.navigate(AppRoute.Result(effect.recordId))
-                                    }
                                 }
                                 AddRecordScreen(viewModel, { navigator.back() }, { recordId -> navigator.navigate(AppRoute.Result(recordId)) })
                             }

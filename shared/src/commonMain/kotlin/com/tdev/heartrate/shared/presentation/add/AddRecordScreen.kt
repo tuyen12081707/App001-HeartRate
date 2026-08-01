@@ -56,6 +56,7 @@ import app001heartrate.shared.generated.resources.add_record_error_range
 import app001heartrate.shared.generated.resources.add_record_note_label
 import app001heartrate.shared.generated.resources.add_record_save_button
 import app001heartrate.shared.generated.resources.add_record_title
+import app001heartrate.shared.generated.resources.action_back
 import app001heartrate.shared.generated.resources.body_state_after_waking
 import app001heartrate.shared.generated.resources.body_state_before_bed
 import app001heartrate.shared.generated.resources.body_state_exercising
@@ -81,7 +82,7 @@ fun AddRecordScreen(
         }
     }
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(Res.string.add_record_title)) }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }) },
+        topBar = { TopAppBar(title = { Text(stringResource(Res.string.add_record_title)) }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.action_back)) } }) },
         modifier = modifier
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {

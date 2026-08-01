@@ -24,6 +24,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tdev.heartrate.shared.domain.model.DashboardPoint
+import app001heartrate.shared.generated.resources.Res
+import app001heartrate.shared.generated.resources.dashboard_chart_empty
+import app001heartrate.shared.generated.resources.dashboard_chart_title
+import app001heartrate.shared.generated.resources.bpm_unit
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.max
 import kotlin.math.min
 
@@ -37,7 +42,7 @@ fun HeartRateChart(
         Box(
             modifier = modifier.fillMaxWidth().height(190.dp).clip(RoundedCornerShape(24.dp)).background(surface),
             contentAlignment = Alignment.Center
-        ) { Text("No trend data yet", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        ) { Text(stringResource(Res.string.dashboard_chart_empty), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         return
     }
 
@@ -50,8 +55,8 @@ fun HeartRateChart(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Seven-day trend", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text("BPM", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(Res.string.dashboard_chart_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(Res.string.bpm_unit), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Canvas(modifier = Modifier.fillMaxWidth().height(190.dp)) {
             val width = size.width

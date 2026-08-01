@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -63,6 +64,26 @@ class ViewModelTest {
     }
 
     @Test
+    fun dashboardRetryReexecutesFailedFlow() = runTest {
+        var attempts = 0
+        val repository = FakeHeartRateRepository(
+            records = listOf(record(id = 1L, bpm = 72)),
+            getAllRecordsOverride = {
+                flow {
+                    if (attempts++ == 0) throw IllegalStateException("temporary")
+                    emit(listOf(record(id = 1L, bpm = 72)))
+                }
+            }
+        )
+        val viewModel = DashboardViewModel(GetDashboardDataUseCase(repository, Clock { 1_000L }, TimeZone.UTC))
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.data is DataState.Error)
+        viewModel.retry()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.data is DataState.Success)
+    }
+
+    @Test
     fun historyMapsRecordFlowToDataStateSuccess() = runTest {
         val record = record(id = 1L, bpm = 72)
         val repository = FakeHeartRateRepository(records = listOf(record))
@@ -73,6 +94,26 @@ class ViewModelTest {
 
         advanceUntilIdle()
 
+        assertEquals(listOf(record), (viewModel.uiState.value.data as DataState.Success).data)
+    }
+
+    @Test
+    fun historyRetryReexecutesFailedFlow() = runTest {
+        var attempts = 0
+        val record = record(id = 1L, bpm = 72)
+        val repository = FakeHeartRateRepository(
+            getAllRecordsOverride = {
+                flow {
+                    if (attempts++ == 0) throw IllegalStateException("temporary")
+                    emit(listOf(record))
+                }
+            }
+        )
+        val viewModel = HistoryViewModel(GetHeartRateHistoryUseCase(repository), DeleteHeartRateRecordUseCase(repository))
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.data is DataState.Error)
+        viewModel.retry()
+        advanceUntilIdle()
         assertEquals(listOf(record), (viewModel.uiState.value.data as DataState.Success).data)
     }
 
@@ -91,6 +132,21 @@ class ViewModelTest {
 
         assertEquals(listOf(record), (viewModel.uiState.value.data as DataState.Success).data)
         assertTrue(viewModel.uiState.value.deleteState is DataState.Error)
+    }
+
+    @Test
+    fun failedDeleteCanBeRetriedForTheSameRecord() = runTest {
+        val record = record(id = 1L, bpm = 72)
+        val repository = FakeHeartRateRepository(records = listOf(record), deleteFailuresRemaining = 1)
+        val viewModel = HistoryViewModel(GetHeartRateHistoryUseCase(repository), DeleteHeartRateRecordUseCase(repository))
+        advanceUntilIdle()
+        viewModel.onIntent(HistoryIntent.DeleteRecord(record.id))
+        advanceUntilIdle()
+        assertEquals(record.id, viewModel.uiState.value.deleteErrorRecordId)
+        viewModel.onIntent(HistoryIntent.DeleteRecord(record.id))
+        advanceUntilIdle()
+        assertEquals(DataState.Success(record.id), viewModel.uiState.value.deleteState)
+        assertTrue((viewModel.uiState.value.data as DataState.Success).data.isEmpty())
     }
 
     @Test
@@ -166,11 +222,14 @@ class ViewModelTest {
 private class FakeHeartRateRepository(
     records: List<HeartRateRecord> = emptyList(),
     private val insertResult: suspend () -> Long = { 1L },
-    private val deleteFailure: Throwable? = null
+    private val deleteFailure: Throwable? = null,
+    private val getAllRecordsOverride: (() -> Flow<List<HeartRateRecord>>)? = null,
+    var deleteFailuresRemaining: Int = 0
 ) : HeartRateRepository {
     private val recordFlow = MutableStateFlow(records)
     var insertCalls = 0
         private set
+    private var deleteCalls = 0
 
     override suspend fun insertRecord(record: HeartRateRecord): Long {
         insertCalls += 1
@@ -180,11 +239,16 @@ private class FakeHeartRateRepository(
     override suspend fun getRecordById(id: Long): HeartRateRecord? = recordFlow.value.firstOrNull { it.id == id }
 
     override suspend fun deleteRecord(id: Long) {
+        deleteCalls += 1
+        if (deleteFailuresRemaining > 0) {
+            deleteFailuresRemaining -= 1
+            throw IllegalStateException("delete failed")
+        }
         deleteFailure?.let { throw it }
         recordFlow.value = recordFlow.value.filterNot { it.id == id }
     }
 
-    override fun getAllRecords(): Flow<List<HeartRateRecord>> = recordFlow
+    override fun getAllRecords(): Flow<List<HeartRateRecord>> = getAllRecordsOverride?.invoke() ?: recordFlow
 
     override suspend fun getAverageBpm(): Double = 0.0
 }

@@ -6,6 +6,7 @@ import com.tdev.heartrate.shared.domain.usecase.GetDashboardDataUseCase
 import com.tdev.heartrate.shared.presentation.BaseViewModel
 import com.tdev.heartrate.shared.presentation.DataState
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -21,13 +22,20 @@ class DashboardViewModel(
     private val getDashboardDataUseCase: GetDashboardDataUseCase
 ) : BaseViewModel<DashboardUiState, Unit, Unit>(DashboardUiState()) {
 
+    private var loadJob: Job? = null
+
     fun retry() {
-        _uiState.value = DashboardUiState(DataState.Loading)
+        load()
     }
 
     init {
+        load()
+    }
+
+    private fun load() {
+        loadJob?.cancel()
         _uiState.value = DashboardUiState(DataState.Loading)
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             getDashboardDataUseCase()
                 .map<DashboardData, DataState<DashboardData>> { DataState.Success(it) }
                 .catch { throwable ->

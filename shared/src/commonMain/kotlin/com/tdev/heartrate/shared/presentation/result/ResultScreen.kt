@@ -35,6 +35,7 @@ import app001heartrate.shared.generated.resources.result_add_another
 import app001heartrate.shared.generated.resources.result_back_dashboard
 import app001heartrate.shared.generated.resources.result_error
 import app001heartrate.shared.generated.resources.result_title
+import app001heartrate.shared.generated.resources.action_back
 import com.tdev.heartrate.shared.presentation.DataState
 import com.tdev.heartrate.shared.domain.utils.formatTimestamp
 import com.tdev.heartrate.shared.presentation.components.FeatureErrorState
@@ -50,7 +51,7 @@ fun ResultScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(Res.string.result_title)) }, navigationIcon = { IconButton(onClick = onDashboard) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }) },
+        topBar = { TopAppBar(title = { Text(stringResource(Res.string.result_title)) }, navigationIcon = { IconButton(onClick = onDashboard) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.action_back)) } }) },
         modifier = modifier
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
