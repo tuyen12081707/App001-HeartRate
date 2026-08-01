@@ -66,6 +66,13 @@ khi lập plan.
 - Android derives demo mode from `ApplicationInfo.FLAG_DEBUGGABLE`; shared/iOS defaults
   remain disabled.
 
+### DECIDED — Camera measurement ViewModel boundary
+
+- Ngày: 2026-08-02
+- Camera measurement dùng `BaseViewModel<UiState, Intent, SideEffect>`. Sensor được constructor-inject vào `CameraMeasurementViewModel`; `CameraMeasurementScreen` không gọi `koinInject` hoặc tự quản lý Flow/lifecycle camera.
+- Lý do: Đồng nhất Clean Architecture/KMP, dễ test và tránh đưa orchestration vào Composable.
+- Trạng thái: IN_PROGRESS
+
 ## Brainstorm Inbox
 
 ### IDEA — Blood Pressure History

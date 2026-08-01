@@ -32,3 +32,10 @@ Format:
 
 - Nội dung: Task 2 clarification: demo seeding phải atomic — bảy heart-rate inserts và marker demo_seed_v1 nằm trong cùng transaction, retry không tạo duplicate. Dashboard day buckets dùng calendar day theo timezone thiết bị (injectable để test), không hard-code UTC.
 - Trạng thái: active
+
+## 2026-08-02 — Camera measurement presentation architecture
+
+- Quyết định: Camera measurement phải tuân thủ pattern `BaseViewModel<UiState, Intent, SideEffect>`; `CameraMeasurementViewModel` nhận `CameraHeartRateSensor` qua constructor injection, còn `CameraMeasurementScreen` chỉ render state, gửi lifecycle intent và xử lý navigation side effect. Koin chỉ wire dependency và ViewModel, không inject sensor trực tiếp trong Composable.
+- Lý do: Giữ nhất quán với kiến trúc KMP đã chốt, tách orchestration/lifecycle khỏi UI và cho phép test sensor bằng fake implementation.
+- Phạm vi: `shared/commonMain` camera presentation và `presentationModule`.
+- Trạng thái: active
