@@ -224,23 +224,29 @@ abstract class BaseViewModel<S, I, E>(initialState: S) : ViewModel() {
 | `HomeScreen` | `home/` | `onNavigateToAddRecord`, `onNavigateToNewsDetail(url)` |
 | `DashboardScreen` | `dashboard/` | `viewModel`, `onNavigateToAddRecord`, `onNavigateToBloodPressure`; Home UI theo Figma node `27:8823` |
 | `HistoryScreen` | `history/` | viewModel param trực tiếp |
-| `AddRecordScreen` | `add/` | `onNavigateBack`, `onOpenCamera` |
+| `AddRecordScreen` | `add/` | `viewModel`, `onBack`, `onSaved(recordId)`, optional `onOpenCamera` |
 | `BloodPressureScreen` | `bloodpressure/` | `viewModel`, `onNavigateBack`; Figma node `33:2705` |
 | `CameraMeasurementScreen` | `camera/` | `onNavigateBack`, `onMeasurementCompleted(bpm)`, `onMeasurementFailed` |
 | `ProfileScreen` | `profile/` | không có |
 | `ResultScreen` | `result/` | `bpm: Int`, `bodyState: String`, `onGoHome`, `onMeasureAgain` |
-| `FailedScanScreen` | `camera/` | `onTryAgain`, `onGoHome` |
+| `FailedScanScreen` | `camera/` | `onTryAgain`, `onEnterManually` |
 | `NewsDetailScreen` | `newsdetail/` | `url: String`, `onNavigateBack` |
 
 Typed navigation is defined in `presentation/navigation/`: `MainTab` (Dashboard,
-History, News, Profile), `AppRoute` (Disclaimer, Main(tab), AddHeartRate,
-Result(recordId), plus retained NewsDetail/BloodPressure/Camera/FailedScan routes),
+History, News, Profile), `AppRoute` (Disclaimer, Main(tab),
+AddHeartRate(prefilledBpm?, measureType), Result(recordId),
+CameraPermissionDenied, plus retained NewsDetail/BloodPressure/Camera/FailedScan routes),
 and `AppNavigator` (StateFlow route with stack-based navigate/back). `ResultViewModel`
 loads a persisted `recordId` and exposes `ResultUiState(data: DataState<HeartRateRecord>)`.
 The App uses `AppRoute.Result.resultViewModelKey()` as a route-specific Koin key so
 successive result records cannot reuse a cached ViewModel. `AddRecordViewModel` keeps a
 successful save locked until `ResetForNewEntry`, which App dispatches on each new Add
-route entry.
+route entry. A camera completion navigates to `AddHeartRate(prefilledBpm, CAMERA_SENSOR)`;
+the user confirms the value in the editor before it is persisted. Android passes a
+runtime camera-permission requester into `App`; iOS passes null, so the camera CTA stays
+hidden on iOS. Permission denial and sensor failure both provide retry and manual-entry
+fallbacks. `CameraMeasurementOutcome` maps COMPLETED/FAILED/ERROR to testable terminal
+outcomes, and `CameraPermissionDeniedScreen` explains the permission requirement.
 
 **Home UI assets** (`commonMain/composeResources/drawable/`):
 `home_heart_wave.png`, `home_heart.png`, `home_blood_pressure.png`,
