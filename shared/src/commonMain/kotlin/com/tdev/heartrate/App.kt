@@ -122,8 +122,8 @@ fun App(
                                 }
                             })
                             is AppRoute.Main -> when (currentRoute.tab) {
-                                MainTab.Dashboard -> DashboardScreen(koinViewModel<DashboardViewModel>(), { navigator.navigate(AppRoute.AddHeartRate) }, { navigator.navigate(AppRoute.BloodPressure) })
-                                MainTab.History -> HistoryScreen(koinViewModel<HistoryViewModel>())
+                                MainTab.Dashboard -> DashboardScreen(koinViewModel<DashboardViewModel>(), { navigator.navigate(AppRoute.AddHeartRate) }, { navigator.navigate(AppRoute.Main(it)) })
+                                MainTab.History -> HistoryScreen(koinViewModel<HistoryViewModel>(), { navigator.navigate(AppRoute.Main(it)) })
                                 MainTab.News -> HomeScreen(onNavigateToAddRecord = { navigator.navigate(AppRoute.AddHeartRate) }, onNavigateToNewsDetail = { navigator.navigate(AppRoute.NewsDetail(it)) })
                                 MainTab.Profile -> ProfileScreen()
                             }
@@ -135,16 +135,11 @@ fun App(
                                         if (effect is AddRecordSideEffect.NavigateToResult) navigator.navigate(AppRoute.Result(effect.recordId))
                                     }
                                 }
-                                AddRecordScreen(viewModel, { navigator.back() }, { navigator.navigate(AppRoute.CameraMeasurement) })
+                                AddRecordScreen(viewModel, { navigator.back() }, { recordId -> navigator.navigate(AppRoute.Result(recordId)) })
                             }
                             is AppRoute.Result -> {
                                 val viewModel = koinViewModel<ResultViewModel>(key = currentRoute.resultViewModelKey(), parameters = { parametersOf(currentRoute.recordId) })
-                                val resultState by viewModel.uiState.collectAsState()
-                                when (val result = resultState.data) {
-                                    DataState.Loading, DataState.Idle -> androidx.compose.material3.CircularProgressIndicator()
-                                    is DataState.Error -> androidx.compose.material3.Text(result.message)
-                                    is DataState.Success -> ResultScreen(result.data.bpm, result.data.bodyState.name.lowercase().replaceFirstChar { it.uppercase() }, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) }, { navigator.navigate(AppRoute.AddHeartRate) })
-                                }
+                                ResultScreen(viewModel, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) }, { navigator.navigate(AppRoute.AddHeartRate) })
                             }
                             AppRoute.BloodPressure -> BloodPressureScreen(koinViewModel<BloodPressureViewModel>(), { navigator.back() })
                             AppRoute.CameraMeasurement -> CameraMeasurementScreen({ navigator.back() }, { navigator.navigate(AppRoute.AddHeartRate) }, { navigator.navigate(AppRoute.FailedScan) })

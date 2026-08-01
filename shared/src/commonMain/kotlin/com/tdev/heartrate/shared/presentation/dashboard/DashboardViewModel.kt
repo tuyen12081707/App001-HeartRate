@@ -21,6 +21,10 @@ class DashboardViewModel(
     private val getDashboardDataUseCase: GetDashboardDataUseCase
 ) : BaseViewModel<DashboardUiState, Unit, Unit>(DashboardUiState()) {
 
+    fun retry() {
+        _uiState.value = DashboardUiState(DataState.Loading)
+    }
+
     init {
         _uiState.value = DashboardUiState(DataState.Loading)
         viewModelScope.launch {

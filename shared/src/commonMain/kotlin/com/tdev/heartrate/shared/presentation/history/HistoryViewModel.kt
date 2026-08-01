@@ -30,6 +30,10 @@ class HistoryViewModel(
     private val deleteHeartRateRecordUseCase: DeleteHeartRateRecordUseCase
 ) : BaseViewModel<HistoryUiState, HistoryIntent, Unit>(HistoryUiState()) {
 
+    fun retry() {
+        _uiState.update { it.copy(data = DataState.Loading) }
+    }
+
     init {
         _uiState.value = HistoryUiState(data = DataState.Loading)
         viewModelScope.launch {
