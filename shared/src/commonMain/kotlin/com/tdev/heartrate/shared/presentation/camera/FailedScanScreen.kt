@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app001heartrate.shared.generated.resources.Res
 import app001heartrate.shared.generated.resources.failed_scan_description
-import app001heartrate.shared.generated.resources.failed_scan_go_home
+import app001heartrate.shared.generated.resources.failed_scan_enter_manually
 import app001heartrate.shared.generated.resources.failed_scan_title
 import app001heartrate.shared.generated.resources.failed_scan_try_again
 import org.jetbrains.compose.resources.stringResource
@@ -50,7 +50,7 @@ import com.tdev.heartrate.shared.presentation.theme.PrimaryRed
 @Composable
 fun FailedScanScreen(
     onTryAgain: () -> Unit,
-    onGoHome: () -> Unit,
+    onEnterManually: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -158,7 +158,7 @@ fun FailedScanScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 AnimatedPrimaryButton(
-                    onClick = onGoHome,
+                    onClick = onEnterManually,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     containerColor = Color.Transparent,
                     contentColor = PrimaryRed
@@ -167,9 +167,9 @@ fun FailedScanScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(Icons.Default.Home, contentDescription = null, tint = PrimaryRed)
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = PrimaryRed)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(Res.string.failed_scan_go_home), style = MaterialTheme.typography.titleMedium, color = PrimaryRed)
+                        Text(stringResource(Res.string.failed_scan_enter_manually), style = MaterialTheme.typography.titleMedium, color = PrimaryRed)
                     }
                 }
 

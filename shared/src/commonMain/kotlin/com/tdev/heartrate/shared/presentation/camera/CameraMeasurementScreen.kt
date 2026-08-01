@@ -78,11 +78,11 @@ fun CameraMeasurementScreen(
         }
     }
 
-    LaunchedEffect(state.state) {
-        if (state.state == SensorState.COMPLETED && state.bpm > 0) {
-            onMeasurementCompleted(state.bpm)
-        } else if (state.state == SensorState.FAILED) {
-            onMeasurementFailed()
+    LaunchedEffect(state) {
+        when (val outcome = state.toOutcome()) {
+            is CameraMeasurementOutcome.Completed -> onMeasurementCompleted(outcome.bpm)
+            CameraMeasurementOutcome.Failed -> onMeasurementFailed()
+            CameraMeasurementOutcome.None -> Unit
         }
     }
 
