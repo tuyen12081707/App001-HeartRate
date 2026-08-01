@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 
 data class AddRecordUiState(
     val bpm: String = "",
+    val measureType: MeasureType = MeasureType.MANUAL,
     val bodyState: BodyState? = null,
     val note: String = "",
     val saveState: DataState<Long> = DataState.Idle,
@@ -28,7 +29,10 @@ sealed interface AddRecordIntent {
     data class UpdateNote(val note: String) : AddRecordIntent
     data object SaveRecord : AddRecordIntent
     data object ClearError : AddRecordIntent
-    data object ResetForNewEntry : AddRecordIntent
+    data class ResetForNewEntry(
+        val prefilledBpm: Int? = null,
+        val measureType: MeasureType = MeasureType.MANUAL
+    ) : AddRecordIntent
 }
 
 sealed interface AddRecordSideEffect {
@@ -53,7 +57,10 @@ class AddRecordViewModel(
             AddRecordIntent.ClearError -> _uiState.update {
                 it.copy(saveState = DataState.Idle, fieldErrors = emptyMap())
             }
-            AddRecordIntent.ResetForNewEntry -> _uiState.value = AddRecordUiState()
+            is AddRecordIntent.ResetForNewEntry -> _uiState.value = AddRecordUiState(
+                bpm = intent.prefilledBpm?.toString().orEmpty(),
+                measureType = intent.measureType
+            )
             AddRecordIntent.SaveRecord -> saveRecord()
         }
     }
@@ -80,7 +87,7 @@ class AddRecordViewModel(
             try {
                 val id = addHeartRateRecordUseCase(
                     bpm = bpm!!,
-                    measureType = MeasureType.MANUAL,
+                    measureType = currentState.measureType,
                     bodyState = currentState.bodyState!!,
                     note = currentState.note.ifBlank { null }
                 )

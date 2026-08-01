@@ -121,24 +121,30 @@ fun App(
                                 }
                             })
                             is AppRoute.Main -> when (currentRoute.tab) {
-                                MainTab.Dashboard -> DashboardScreen(koinViewModel<DashboardViewModel>(), { navigator.navigate(AppRoute.AddHeartRate) }, { navigator.navigate(AppRoute.Main(it)) })
+                                MainTab.Dashboard -> DashboardScreen(koinViewModel<DashboardViewModel>(), { navigator.navigate(AppRoute.AddHeartRate()) }, { navigator.navigate(AppRoute.Main(it)) })
                                 MainTab.History -> HistoryScreen(koinViewModel<HistoryViewModel>(), { navigator.navigate(AppRoute.Main(it)) })
-                                MainTab.News -> HomeScreen(onNavigateToAddRecord = { navigator.navigate(AppRoute.AddHeartRate) }, onNavigateToNewsDetail = { navigator.navigate(AppRoute.NewsDetail(it)) })
+                                MainTab.News -> HomeScreen(onNavigateToAddRecord = { navigator.navigate(AppRoute.AddHeartRate()) }, onNavigateToNewsDetail = { navigator.navigate(AppRoute.NewsDetail(it)) })
                                 MainTab.Profile -> ProfileScreen()
                             }
-                            AppRoute.AddHeartRate -> {
+                            is AppRoute.AddHeartRate -> {
                                 val viewModel = koinViewModel<AddRecordViewModel>()
-                                LaunchedEffect(viewModel) {
-                                    viewModel.onIntent(AddRecordIntent.ResetForNewEntry)
+                                LaunchedEffect(viewModel, currentRoute) {
+                                    viewModel.onIntent(
+                                        AddRecordIntent.ResetForNewEntry(
+                                            prefilledBpm = currentRoute.prefilledBpm,
+                                            measureType = currentRoute.measureType
+                                        )
+                                    )
                                 }
                                 AddRecordScreen(viewModel, { navigator.back() }, { recordId -> navigator.navigate(AppRoute.Result(recordId)) })
                             }
                             is AppRoute.Result -> {
                                 val viewModel = koinViewModel<ResultViewModel>(key = currentRoute.resultViewModelKey(), parameters = { parametersOf(currentRoute.recordId) })
-                                ResultScreen(viewModel, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) }, { navigator.navigate(AppRoute.AddHeartRate) })
+                                ResultScreen(viewModel, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) }, { navigator.navigate(AppRoute.AddHeartRate()) })
                             }
                             AppRoute.BloodPressure -> BloodPressureScreen(koinViewModel<BloodPressureViewModel>(), { navigator.back() })
-                            AppRoute.CameraMeasurement -> CameraMeasurementScreen({ navigator.back() }, { navigator.navigate(AppRoute.AddHeartRate) }, { navigator.navigate(AppRoute.FailedScan) })
+                            AppRoute.CameraMeasurement -> CameraMeasurementScreen({ navigator.back() }, { bpm -> navigator.navigate(AppRoute.AddHeartRate(prefilledBpm = bpm)) }, { navigator.navigate(AppRoute.FailedScan) })
+                            AppRoute.CameraPermissionDenied -> navigator.back()
                             AppRoute.FailedScan -> FailedScanScreen({ navigator.navigate(AppRoute.CameraMeasurement) }, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) })
                             is AppRoute.NewsDetail -> com.tdev.heartrate.shared.presentation.newsdetail.NewsDetailScreen(currentRoute.url) { navigator.back() }
                         }

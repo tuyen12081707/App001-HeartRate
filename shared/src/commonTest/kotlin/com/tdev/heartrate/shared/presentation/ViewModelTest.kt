@@ -191,12 +191,25 @@ class ViewModelTest {
         viewModel.onIntent(AddRecordIntent.UpdateBodyState(BodyState.RESTING))
         viewModel.onIntent(AddRecordIntent.UpdateNote("morning"))
 
-        viewModel.onIntent(AddRecordIntent.ResetForNewEntry)
+        viewModel.onIntent(AddRecordIntent.ResetForNewEntry())
 
         assertEquals("", viewModel.uiState.value.bpm)
         assertEquals(null, viewModel.uiState.value.bodyState)
         assertEquals("", viewModel.uiState.value.note)
         assertEquals(DataState.Idle, viewModel.uiState.value.saveState)
+    }
+
+    @Test
+    fun cameraEntryPrefillsBpmAndSavesCameraSource() = runTest {
+        val repository = FakeHeartRateRepository()
+        val viewModel = AddRecordViewModel(AddHeartRateRecordUseCase(repository, Clock { 1L }))
+        viewModel.onIntent(AddRecordIntent.ResetForNewEntry(82, MeasureType.CAMERA_SENSOR))
+        viewModel.onIntent(AddRecordIntent.UpdateBodyState(BodyState.RESTING))
+        viewModel.onIntent(AddRecordIntent.SaveRecord)
+        advanceUntilIdle()
+
+        assertEquals("82", viewModel.uiState.value.bpm)
+        assertEquals(MeasureType.CAMERA_SENSOR, repository.lastInsertedRecord!!.measureType)
     }
 
     @Test
@@ -229,10 +242,13 @@ private class FakeHeartRateRepository(
     private val recordFlow = MutableStateFlow(records)
     var insertCalls = 0
         private set
+    var lastInsertedRecord: HeartRateRecord? = null
+        private set
     private var deleteCalls = 0
 
     override suspend fun insertRecord(record: HeartRateRecord): Long {
         insertCalls += 1
+        lastInsertedRecord = record
         return insertResult()
     }
 
