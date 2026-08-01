@@ -123,6 +123,8 @@ fun NewsDetailDto.toDomain(): NewsDetail
 ```kotlin
 data class HeartRateRecord(val id: Long = 0, val bpm: Int, val timestamp: Long, val measureType: MeasureType, val bodyState: BodyState, val note: String? = null)
 data class HeartRateStats(val averageBpm: Int = 0, val maxBpm: Int = 0, val minBpm: Int = 0, val totalRecords: Int = 0)
+data class DashboardPoint(val dayStartMillis: Long, val averageBpm: Int, val recordCount: Int)
+data class DashboardData(val latest: HeartRateRecord?, val averageBpm: Int, val minBpm: Int, val maxBpm: Int, val totalRecords: Int, val points: List<DashboardPoint>)
 data class BloodPressureRecord(val id: Long = 0, val systolic: Int, val diastolic: Int, val pulse: Int, val timestamp: Long, val note: String? = null)
 data class News(val title: String, val description: String, val urlToImage: String?, val url: String, val publishedAt: String)
 data class NewsDetail(val url: String, val content: String)  // kiểm tra file
@@ -167,7 +169,10 @@ interface NewsRepository {
 ### Use Cases (`domain/usecase/`) — Đã có
 | Class | Constructor | invoke() signature |
 |-------|------------|-------------------|
-| `AddHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(bpm: Int, measureType: MeasureType = MANUAL, bodyState: BodyState, note: String? = null)` |
+| `AddHeartRateRecordUseCase` | `(HeartRateRepository, Clock)` | `suspend invoke(bpm, measureType, bodyState, note, timestamp: Long? = null): Long` |
+| `GetHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(id: Long): HeartRateRecord?` |
+| `GetDashboardDataUseCase` | `(HeartRateRepository, Clock)` | `invoke(): Flow<DashboardData>`; current deterministic epoch-day bucket plus six prior buckets |
+| `SeedDemoHeartRateUseCase` | `(HeartRateRepository, AppMetadataRepository, Clock)` | `suspend invoke(): Boolean`; inserts seven fixed manual records once using `demo_seed_v1` |
 | `AddBloodPressureRecordUseCase` | `(BloodPressureRepository)` | `suspend invoke(systolic: Int, diastolic: Int, pulse: Int, timestamp: Long = now, note: String? = null)` |
 | `GetHeartRateHistoryUseCase` | `(HeartRateRepository)` | `invoke(): Flow<List<HeartRateRecord>>` |
 | `DeleteHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(id: Long)` |
@@ -235,19 +240,24 @@ val networkModule = module {
 val dataModule = module {
     single { HeartRateDatabase(driver=get(), HeartRateEntityAdapter=HeartRateEntity.Adapter(measureTypeAdapter=EnumColumnAdapter(), bodyStateAdapter=EnumColumnAdapter())) }
     single<HeartRateRepository> { HeartRateRepositoryImpl(get(), get()) }
+    single<AppMetadataRepository> { AppMetadataRepositoryImpl(get()) }
     single<BloodPressureRepository> { BloodPressureRepositoryImpl(get(), get()) }
     single<NewsRepository> { NewsRepositoryImpl(get()) }
     // ← THÊM Repository mới ở đây
 }
 
 val domainModule = module {
-    factory { AddHeartRateRecordUseCase(get()) }
+    factory { AddHeartRateRecordUseCase(get(), get()) }
     factory { AddBloodPressureRecordUseCase(get()) }
     factory { GetHeartRateHistoryUseCase(get()) }
+    factory { GetHeartRateRecordUseCase(get()) }
     factory { DeleteHeartRateRecordUseCase(get()) }
     factory { GetHeartRateStatsUseCase(get()) }
+    factory { GetDashboardDataUseCase(get(), get()) }
+    factory { SeedDemoHeartRateUseCase(get(), get(), get()) }
     factory { GetNewsUseCase(get()) }
     factory { GetNewsDetailUseCase(get()) }
+    single<Clock> { SystemClock }
     single { provideAppDispatchers() }
     // ← THÊM UseCase mới ở đây
 }
@@ -264,6 +274,17 @@ val presentationModule = module {
 
 expect val platformModule: Module   // Android: AndroidSqliteDriver + CameraHeartRateSensorImpl
 ```
+
+### Deterministic time and dashboard data (2026-08-01)
+
+- `domain/utils/Clock.kt` defines `Clock.nowMillis()` and `SystemClock`, which delegates
+  to the existing cross-platform `getCurrentTimeMillis()` expect/actual function.
+- Dashboard aggregation is offline-first over `HeartRateRepository.getAllRecords()`.
+  It derives up to one non-empty `DashboardPoint` per deterministic epoch-day bucket,
+  ordered oldest-to-newest, and excludes records outside the injected clock's current
+  seven-bucket window (including future records).
+- Demo seeding checks `AppMetadataRepository` before inserting. The marker is written
+  only after all seven record inserts return successfully.
 
 ---
 

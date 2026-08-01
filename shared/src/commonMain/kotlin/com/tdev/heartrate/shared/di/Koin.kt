@@ -4,7 +4,9 @@ import app.cash.sqldelight.EnumColumnAdapter
 import com.tdev.heartrate.shared.data.database.HeartRateDatabase
 import com.tdev.heartrate.shared.data.database.HeartRateEntity
 import com.tdev.heartrate.shared.data.repository.HeartRateRepositoryImpl
+import com.tdev.heartrate.shared.data.repository.AppMetadataRepositoryImpl
 import com.tdev.heartrate.shared.data.repository.BloodPressureRepositoryImpl
+import com.tdev.heartrate.shared.domain.repository.AppMetadataRepository
 import com.tdev.heartrate.shared.domain.repository.HeartRateRepository
 import com.tdev.heartrate.shared.domain.repository.BloodPressureRepository
 import com.tdev.heartrate.shared.domain.usecase.AddBloodPressureRecordUseCase
@@ -12,6 +14,11 @@ import com.tdev.heartrate.shared.domain.usecase.AddHeartRateRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.DeleteHeartRateRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.GetHeartRateHistoryUseCase
 import com.tdev.heartrate.shared.domain.usecase.GetHeartRateStatsUseCase
+import com.tdev.heartrate.shared.domain.usecase.GetDashboardDataUseCase
+import com.tdev.heartrate.shared.domain.usecase.GetHeartRateRecordUseCase
+import com.tdev.heartrate.shared.domain.usecase.SeedDemoHeartRateUseCase
+import com.tdev.heartrate.shared.domain.utils.Clock
+import com.tdev.heartrate.shared.domain.utils.SystemClock
 import com.tdev.heartrate.shared.domain.utils.provideAppDispatchers
 import com.tdev.heartrate.shared.presentation.add.AddRecordViewModel
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewModel
@@ -47,12 +54,16 @@ val networkModule = module {
 
 val domainModule = module {
     factory { AddBloodPressureRecordUseCase(get()) }
-    factory { AddHeartRateRecordUseCase(get()) }
+    factory { AddHeartRateRecordUseCase(get(), get()) }
     factory { GetHeartRateHistoryUseCase(get()) }
+    factory { GetHeartRateRecordUseCase(get()) }
     factory { DeleteHeartRateRecordUseCase(get()) }
     factory { GetHeartRateStatsUseCase(get()) }
+    factory { GetDashboardDataUseCase(get(), get()) }
+    factory { SeedDemoHeartRateUseCase(get(), get(), get()) }
     factory { GetNewsUseCase(get()) }
     factory { com.tdev.heartrate.shared.domain.usecase.GetNewsDetailUseCase(get()) }
+    single<Clock> { SystemClock }
     single { provideAppDispatchers() }
 }
 
@@ -67,6 +78,7 @@ val dataModule = module {
         ) 
     }
     single<HeartRateRepository> { HeartRateRepositoryImpl(get(), get()) }
+    single<AppMetadataRepository> { AppMetadataRepositoryImpl(get()) }
     single<BloodPressureRepository> { BloodPressureRepositoryImpl(get(), get()) }
     single<NewsRepository> { NewsRepositoryImpl(get()) }
 }
@@ -81,4 +93,3 @@ val presentationModule = module {
 }
 
 expect val platformModule: Module
-
