@@ -15,4 +15,9 @@ class AppNavigatorTest {
         navigator.back()
         assertEquals(AppRoute.AddHeartRate, navigator.route.value)
     }
+
+    @Test
+    fun resultRoutesHaveDistinctViewModelKeys() {
+        assertEquals(false, AppRoute.Result(1L).resultViewModelKey() == AppRoute.Result(2L).resultViewModelKey())
+    }
 }

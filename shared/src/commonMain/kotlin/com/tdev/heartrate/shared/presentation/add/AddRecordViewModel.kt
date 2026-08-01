@@ -28,6 +28,7 @@ sealed interface AddRecordIntent {
     data class UpdateNote(val note: String) : AddRecordIntent
     data object SaveRecord : AddRecordIntent
     data object ClearError : AddRecordIntent
+    data object ResetForNewEntry : AddRecordIntent
 }
 
 sealed interface AddRecordSideEffect {
@@ -52,13 +53,14 @@ class AddRecordViewModel(
             AddRecordIntent.ClearError -> _uiState.update {
                 it.copy(saveState = DataState.Idle, fieldErrors = emptyMap())
             }
+            AddRecordIntent.ResetForNewEntry -> _uiState.value = AddRecordUiState()
             AddRecordIntent.SaveRecord -> saveRecord()
         }
     }
 
     private fun saveRecord() {
         val currentState = _uiState.value
-        if (currentState.saveState is DataState.Loading) return
+        if (currentState.saveState is DataState.Loading || currentState.saveState is DataState.Success) return
 
         val bpm = currentState.bpm.toIntOrNull()
         val errors = buildMap {

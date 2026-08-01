@@ -20,3 +20,5 @@ class AppNavigator(initialRoute: AppRoute) {
         _route.value = backStack.last()
     }
 }
+
+fun AppRoute.Result.resultViewModelKey(): String = "result-$recordId"

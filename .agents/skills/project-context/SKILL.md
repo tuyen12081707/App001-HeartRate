@@ -237,6 +237,10 @@ History, News, Profile), `AppRoute` (Disclaimer, Main(tab), AddHeartRate,
 Result(recordId), plus retained NewsDetail/BloodPressure/Camera/FailedScan routes),
 and `AppNavigator` (StateFlow route with stack-based navigate/back). `ResultViewModel`
 loads a persisted `recordId` and exposes `ResultUiState(data: DataState<HeartRateRecord>)`.
+The App uses `AppRoute.Result.resultViewModelKey()` as a route-specific Koin key so
+successive result records cannot reuse a cached ViewModel. `AddRecordViewModel` keeps a
+successful save locked until `ResetForNewEntry`, which App dispatches on each new Add
+route entry.
 
 **Home UI assets** (`commonMain/composeResources/drawable/`):
 `home_heart_wave.png`, `home_heart.png`, `home_blood_pressure.png`,

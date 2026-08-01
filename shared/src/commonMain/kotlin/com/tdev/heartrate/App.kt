@@ -55,6 +55,7 @@ import com.tdev.heartrate.shared.presentation.home.HomeScreen
 import com.tdev.heartrate.shared.presentation.navigation.AppNavigator
 import com.tdev.heartrate.shared.presentation.navigation.AppRoute
 import com.tdev.heartrate.shared.presentation.navigation.MainTab
+import com.tdev.heartrate.shared.presentation.navigation.resultViewModelKey
 import com.tdev.heartrate.shared.presentation.profile.ProfileScreen
 import com.tdev.heartrate.shared.presentation.result.ResultViewModel
 import com.tdev.heartrate.shared.presentation.result.ResultScreen
@@ -129,6 +130,7 @@ fun App(
                             AppRoute.AddHeartRate -> {
                                 val viewModel = koinViewModel<AddRecordViewModel>()
                                 LaunchedEffect(viewModel) {
+                                    viewModel.onIntent(AddRecordIntent.ResetForNewEntry)
                                     viewModel.sideEffect.collect { effect ->
                                         if (effect is AddRecordSideEffect.NavigateToResult) navigator.navigate(AppRoute.Result(effect.recordId))
                                     }
@@ -136,7 +138,7 @@ fun App(
                                 AddRecordScreen(viewModel, { navigator.back() }, { navigator.navigate(AppRoute.CameraMeasurement) })
                             }
                             is AppRoute.Result -> {
-                                val viewModel = koinViewModel<ResultViewModel>(parameters = { parametersOf(currentRoute.recordId) })
+                                val viewModel = koinViewModel<ResultViewModel>(key = currentRoute.resultViewModelKey(), parameters = { parametersOf(currentRoute.recordId) })
                                 val resultState by viewModel.uiState.collectAsState()
                                 when (val result = resultState.data) {
                                     DataState.Loading, DataState.Idle -> androidx.compose.material3.CircularProgressIndicator()
