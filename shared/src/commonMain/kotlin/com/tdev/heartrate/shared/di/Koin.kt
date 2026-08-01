@@ -11,12 +11,15 @@ import com.tdev.heartrate.shared.domain.repository.AppMetadataRepository
 import com.tdev.heartrate.shared.domain.repository.DemoSeedRepository
 import com.tdev.heartrate.shared.domain.repository.HeartRateRepository
 import com.tdev.heartrate.shared.domain.repository.BloodPressureRepository
+import com.tdev.heartrate.shared.domain.model.AppConfig
+import com.tdev.heartrate.shared.domain.usecase.AcceptDisclaimerUseCase
 import com.tdev.heartrate.shared.domain.usecase.AddBloodPressureRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.AddHeartRateRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.DeleteHeartRateRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.GetHeartRateHistoryUseCase
 import com.tdev.heartrate.shared.domain.usecase.GetHeartRateStatsUseCase
 import com.tdev.heartrate.shared.domain.usecase.GetDashboardDataUseCase
+import com.tdev.heartrate.shared.domain.usecase.GetDisclaimerStatusUseCase
 import com.tdev.heartrate.shared.domain.usecase.GetHeartRateRecordUseCase
 import com.tdev.heartrate.shared.domain.usecase.SeedDemoHeartRateUseCase
 import com.tdev.heartrate.shared.domain.utils.Clock
@@ -24,6 +27,7 @@ import com.tdev.heartrate.shared.domain.utils.SystemClock
 import com.tdev.heartrate.shared.domain.utils.provideAppDispatchers
 import kotlinx.datetime.TimeZone
 import com.tdev.heartrate.shared.presentation.add.AddRecordViewModel
+import com.tdev.heartrate.shared.presentation.AppStartupCoordinator
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewModel
 import com.tdev.heartrate.shared.presentation.dashboard.DashboardViewModel
 import com.tdev.heartrate.shared.presentation.history.HistoryViewModel
@@ -56,6 +60,7 @@ val networkModule = module {
 }
 
 val domainModule = module {
+    factory { AcceptDisclaimerUseCase(get()) }
     factory { AddBloodPressureRecordUseCase(get()) }
     factory { AddHeartRateRecordUseCase(get(), get()) }
     factory { GetHeartRateHistoryUseCase(get()) }
@@ -63,12 +68,17 @@ val domainModule = module {
     factory { DeleteHeartRateRecordUseCase(get()) }
     factory { GetHeartRateStatsUseCase(get()) }
     factory { GetDashboardDataUseCase(get(), get(), get()) }
+    factory { GetDisclaimerStatusUseCase(get()) }
     factory { SeedDemoHeartRateUseCase(get(), get()) }
     factory { GetNewsUseCase(get()) }
     factory { com.tdev.heartrate.shared.domain.usecase.GetNewsDetailUseCase(get()) }
     single<Clock> { SystemClock }
     single<TimeZone> { TimeZone.currentSystemDefault() }
     single { provideAppDispatchers() }
+}
+
+fun appConfigModule(appConfig: AppConfig): Module = module {
+    single { appConfig }
 }
 
 val dataModule = module {
@@ -89,6 +99,7 @@ val dataModule = module {
 }
 
 val presentationModule = module {
+    factory { AppStartupCoordinator(get(), get(), get()) }
     factory { BloodPressureViewModel(get()) }
     factory { HistoryViewModel(get(), get()) }
     factory { AddRecordViewModel(get()) }

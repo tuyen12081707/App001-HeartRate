@@ -58,6 +58,14 @@ khi lập plan.
 - Validation common Android host test, Android main compile và iOS simulator ARM64
   compile đã pass.
 
+### DONE — Startup consent and demo coordination
+
+- Ngày: 2026-08-01
+- `AppStartupCoordinator` emits shared `DataState` startup states, persists disclaimer
+  consent in metadata, and gates the atomic demo seed behind `AppConfig`.
+- Android derives demo mode from `ApplicationInfo.FLAG_DEBUGGABLE`; shared/iOS defaults
+  remain disabled.
+
 ## Brainstorm Inbox
 
 ### IDEA — Blood Pressure History

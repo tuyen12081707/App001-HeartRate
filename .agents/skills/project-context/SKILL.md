@@ -180,6 +180,17 @@ interface NewsRepository {
 | `GetNewsUseCase` | `(NewsRepository)` | `suspend invoke(): List<News>` |
 | `GetNewsDetailUseCase` | `(NewsRepository)` | kiểm tra file |
 
+### Startup consent/demo coordination (2026-08-01)
+
+- `AppConfig(demoDataEnabled: Boolean)` controls whether debug/demo startup seeding is enabled.
+- `StartupData(consentAccepted: Boolean)` is the startup result consumed by presentation/navigation.
+- `GetDisclaimerStatusUseCase` and `AcceptDisclaimerUseCase` persist/read the
+  `disclaimer_accepted` metadata key (`"true"` means accepted).
+- `AppStartupCoordinator.start(): Flow<DataState<StartupData>>` emits Loading, then
+  Success with consent status after optional `SeedDemoHeartRateUseCase` execution,
+  or Error carrying the original failure. Demo seeding is skipped when
+  `AppConfig.demoDataEnabled` is false.
+
 ---
 
 ## 🎭 Presentation Layer — Hiện Trạng Thực Tế
@@ -263,6 +274,7 @@ val domainModule = module {
 }
 
 val presentationModule = module {
+    factory { AppStartupCoordinator(get(), get(), get()) }
     factory { HistoryViewModel(get(), get()) }
     factory { AddRecordViewModel(get()) }
     factory { BloodPressureViewModel(get()) }

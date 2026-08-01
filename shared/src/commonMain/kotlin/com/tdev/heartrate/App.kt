@@ -41,12 +41,19 @@ import com.tdev.heartrate.shared.di.domainModule
 import com.tdev.heartrate.shared.di.platformModule
 import com.tdev.heartrate.shared.di.presentationModule
 import com.tdev.heartrate.shared.di.networkModule
+import com.tdev.heartrate.shared.di.appConfigModule
 import com.tdev.heartrate.shared.presentation.home.HomeScreen
+import com.tdev.heartrate.shared.domain.model.AppConfig
+import com.tdev.heartrate.shared.domain.model.StartupData
+import com.tdev.heartrate.shared.presentation.AppStartupCoordinator
+import com.tdev.heartrate.shared.presentation.DataState
 
 import com.tdev.heartrate.shared.presentation.camera.CameraMeasurementScreen
 import com.tdev.heartrate.shared.presentation.camera.FailedScanScreen
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import org.koin.compose.koinInject
+import kotlinx.coroutines.flow.collect
 
 import androidx.compose.material.icons.filled.Person
 import com.tdev.heartrate.shared.presentation.profile.ProfileScreen
@@ -59,7 +66,11 @@ enum class Screen {
 }
 
 @Composable
-fun App(appModule: Module = module { }) {
+fun App(
+    appConfig: AppConfig = AppConfig(demoDataEnabled = false),
+    appModule: Module = module { },
+    onStartupState: (DataState<StartupData>) -> Unit = {}
+) {
     KoinApplication(application = {
         modules(
             appModule,
@@ -67,9 +78,19 @@ fun App(appModule: Module = module { }) {
             domainModule,
             dataModule,
             presentationModule,
-            networkModule
+            networkModule,
+            appConfigModule(appConfig)
         )
     }) {
+        val startupCoordinator = koinInject<AppStartupCoordinator>()
+        var startupState by remember { mutableStateOf<DataState<StartupData>>(DataState.Idle) }
+        androidx.compose.runtime.LaunchedEffect(startupCoordinator) {
+            startupCoordinator.start().collect { state ->
+                startupState = state
+                onStartupState(state)
+            }
+        }
+
         AppTheme {
             var currentScreen by remember { mutableStateOf(Screen.DISCLAIMER) }
             var prefilledBpm by remember { mutableStateOf<String?>(null) }
