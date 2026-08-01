@@ -32,6 +32,7 @@ import com.tdev.heartrate.shared.di.networkModule
 import com.tdev.heartrate.shared.di.platformModule
 import com.tdev.heartrate.shared.di.presentationModule
 import com.tdev.heartrate.shared.domain.model.AppConfig
+import com.tdev.heartrate.shared.domain.model.MeasureType
 import com.tdev.heartrate.shared.domain.model.StartupData
 import com.tdev.heartrate.shared.domain.usecase.AcceptDisclaimerUseCase
 import com.tdev.heartrate.shared.presentation.AppStartupCoordinator
@@ -42,6 +43,7 @@ import com.tdev.heartrate.shared.presentation.add.AddRecordViewModel
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureScreen
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewModel
 import com.tdev.heartrate.shared.presentation.camera.CameraMeasurementScreen
+import com.tdev.heartrate.shared.presentation.camera.CameraPermissionDeniedScreen
 import com.tdev.heartrate.shared.presentation.camera.FailedScanScreen
 import com.tdev.heartrate.shared.presentation.components.BottomBarItem
 import com.tdev.heartrate.shared.presentation.components.CustomBottomBar
@@ -69,10 +71,13 @@ import org.koin.core.module.Module
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 
+typealias CameraPermissionRequester = ((onGranted: () -> Unit, onDenied: () -> Unit) -> Unit)
+
 @Composable
 fun App(
     appConfig: AppConfig = AppConfig(demoDataEnabled = false),
     appModule: Module = module { },
+    cameraPermissionRequester: CameraPermissionRequester? = null,
     onStartupState: (DataState<StartupData>) -> Unit = {}
 ) {
     KoinApplication(application = {
@@ -136,16 +141,51 @@ fun App(
                                         )
                                     )
                                 }
-                                AddRecordScreen(viewModel, { navigator.back() }, { recordId -> navigator.navigate(AppRoute.Result(recordId)) })
+                                val openCamera: (() -> Unit)? = cameraPermissionRequester?.let { requester ->
+                                    {
+                                        requester(
+                                            { navigator.navigate(AppRoute.CameraMeasurement) },
+                                            { navigator.navigate(AppRoute.CameraPermissionDenied) }
+                                        )
+                                    }
+                                }
+                                AddRecordScreen(
+                                    viewModel = viewModel,
+                                    onBack = { navigator.back() },
+                                    onSaved = { recordId -> navigator.navigate(AppRoute.Result(recordId)) },
+                                    onOpenCamera = openCamera
+                                )
                             }
                             is AppRoute.Result -> {
                                 val viewModel = koinViewModel<ResultViewModel>(key = currentRoute.resultViewModelKey(), parameters = { parametersOf(currentRoute.recordId) })
                                 ResultScreen(viewModel, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) }, { navigator.navigate(AppRoute.AddHeartRate()) })
                             }
                             AppRoute.BloodPressure -> BloodPressureScreen(koinViewModel<BloodPressureViewModel>(), { navigator.back() })
-                            AppRoute.CameraMeasurement -> CameraMeasurementScreen({ navigator.back() }, { bpm -> navigator.navigate(AppRoute.AddHeartRate(prefilledBpm = bpm)) }, { navigator.navigate(AppRoute.FailedScan) })
-                            AppRoute.CameraPermissionDenied -> navigator.back()
-                            AppRoute.FailedScan -> FailedScanScreen({ navigator.navigate(AppRoute.CameraMeasurement) }, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) })
+                            AppRoute.CameraMeasurement -> CameraMeasurementScreen(
+                                onNavigateBack = { navigator.back() },
+                                onMeasurementCompleted = { bpm ->
+                                    navigator.navigate(AppRoute.AddHeartRate(bpm, MeasureType.CAMERA_SENSOR))
+                                },
+                                onMeasurementFailed = { navigator.navigate(AppRoute.FailedScan) }
+                            )
+                            AppRoute.CameraPermissionDenied -> CameraPermissionDeniedScreen(
+                                onTryAgain = {
+                                    cameraPermissionRequester?.invoke(
+                                        { navigator.navigate(AppRoute.CameraMeasurement) },
+                                        { /* remain on the denial screen */ }
+                                    )
+                                },
+                                onEnterManually = { navigator.navigate(AppRoute.AddHeartRate()) }
+                            )
+                            AppRoute.FailedScan -> FailedScanScreen(
+                                onTryAgain = {
+                                    cameraPermissionRequester?.invoke(
+                                        { navigator.navigate(AppRoute.CameraMeasurement) },
+                                        { /* remain on the failure screen */ }
+                                    )
+                                },
+                                onEnterManually = { navigator.navigate(AppRoute.AddHeartRate()) }
+                            )
                             is AppRoute.NewsDetail -> com.tdev.heartrate.shared.presentation.newsdetail.NewsDetailScreen(currentRoute.url) { navigator.back() }
                         }
                     }

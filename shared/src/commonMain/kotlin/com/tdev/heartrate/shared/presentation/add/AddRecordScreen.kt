@@ -28,6 +28,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -51,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app001heartrate.shared.generated.resources.Res
 import app001heartrate.shared.generated.resources.add_record_body_state
 import app001heartrate.shared.generated.resources.add_record_bpm_label
+import app001heartrate.shared.generated.resources.add_record_camera_action
 import app001heartrate.shared.generated.resources.add_record_error_invalid
 import app001heartrate.shared.generated.resources.add_record_error_range
 import app001heartrate.shared.generated.resources.add_record_note_label
@@ -73,6 +75,7 @@ fun AddRecordScreen(
     viewModel: AddRecordViewModel,
     onBack: () -> Unit,
     onSaved: (Long) -> Unit,
+    onOpenCamera: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -92,6 +95,14 @@ fun AddRecordScreen(
                 selectedValue = uiState.bpm.toIntOrNull() ?: 80,
                 onValueChange = { viewModel.onIntent(AddRecordIntent.UpdateBpm(it.toString())) }
             )
+            onOpenCamera?.let { openCamera ->
+                OutlinedButton(
+                    onClick = openCamera,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(Res.string.add_record_camera_action))
+                }
+            }
             if (uiState.fieldErrors.containsKey("bpm")) {
                 Text(
                     text = if (uiState.bpm.toIntOrNull() == null) stringResource(Res.string.add_record_error_invalid) else stringResource(Res.string.add_record_error_range),

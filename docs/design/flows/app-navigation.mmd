@@ -18,6 +18,15 @@ flowchart TD
 
   DASHBOARD -->|Thêm nhịp tim| ADD_RECORD[AppRoute.AddHeartRate<br/>AddRecordScreen + AddRecordViewModel]
   ADD_RECORD -->|Back| DASHBOARD
+  ADD_RECORD -->|Measure with camera| CAMERA_PERMISSION{CAMERA permission?}
+  CAMERA_PERMISSION -->|Granted| CAMERA[AppRoute.CameraMeasurement<br/>CameraMeasurementScreen]
+  CAMERA_PERMISSION -->|Denied| CAMERA_DENIED[AppRoute.CameraPermissionDenied<br/>CameraPermissionDeniedScreen]
+  CAMERA_DENIED -->|Allow camera| CAMERA_PERMISSION
+  CAMERA_DENIED -->|Enter manually| ADD_RECORD
+  CAMERA -->|Completed; bpm + CAMERA_SENSOR| ADD_RECORD
+  CAMERA -->|FAILED or ERROR| FAILED_SCAN[AppRoute.FailedScan<br/>FailedScanScreen]
+  FAILED_SCAN -->|Retry| CAMERA_PERMISSION
+  FAILED_SCAN -->|Enter manually| ADD_RECORD
   ADD_RECORD -->|Lưu thành công: recordId: Long| RESULT[AppRoute.Result(recordId)<br/>ResultScreen + keyed ResultViewModel]
   RESULT -->|Về Dashboard| DASHBOARD
   RESULT -->|Thêm bản ghi khác| ADD_RECORD
@@ -30,4 +39,4 @@ flowchart TD
   NEWS -->|Mở bài viết; url: String| NEWS_DETAIL[AppRoute.NewsDetail(url)<br/>NewsDetailScreen]
   NEWS_DETAIL -->|Back| NEWS
 
-  %% Blood pressure/camera routes remain legacy and are outside the heart-rate MVP demo flow.
+  %% Blood pressure remains outside the heart-rate MVP demo flow.
