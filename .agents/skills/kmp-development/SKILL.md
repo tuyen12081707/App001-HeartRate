@@ -5,10 +5,9 @@ description: "Chuẩn hóa việc lập plan, triển khai và review tính năn
 
 # KMP Development — App001HeartRate
 
-Đây là **nguồn policy duy nhất** cho mọi thay đổi KMP trong project. Với từng task,
-đọc phần liên quan của `../project-context/SKILL.md` (bản đồ code) hoặc
-`../app001heartrate/SKILL.md` (recipe/constraint kỹ thuật), thay vì gom các policy
-vào nhiều skill. Nếu có mâu thuẫn, ưu tiên code thực tế trong repo rồi cập nhật lại
+Đây là policy KMP chính của project. Trước khi đọc skill này, route qua
+`../SKILLS_INDEX.md`; chỉ đọc phần skill và context liên quan đến task, không bulk-read
+toàn bộ catalog. Nếu có mâu thuẫn, ưu tiên code thực tế trong repo rồi cập nhật lại
 context.
 
 ## Quy trình trước khi code
@@ -138,8 +137,9 @@ Rule mới chỉ được thêm vào skill này sau khi user chấp thuận rõ 
 
 ## Handoff format
 
-Kết thúc mỗi task bằng: thay đổi chính, file ảnh hưởng, validation đã chạy, rủi ro còn lại
-và đề xuất bước tiếp theo. Nếu task chỉ review/diagnose thì không tự ý sửa code.
+End each task in English with: main changes, affected files, validation commands and
+results, remaining risks, and the recommended next step. If the task is review/diagnosis
+only, do not modify code without user authorization.
 
 ## References
 

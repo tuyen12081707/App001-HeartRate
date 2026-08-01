@@ -2,6 +2,8 @@
 
 File này định nghĩa quy trình chuẩn mà AI Agent phải TUYỆT ĐỐI tuân thủ khi User yêu cầu: **"Hoàn thành Task và chạy Auto Workflow"**.
 
+Workflow chi tiết nằm trong skill [`app001-delivery-workflow`](../skills/app001-delivery-workflow/SKILL.md). File này là entrypoint cho commit/push automation; không phụ thuộc Claude Code.
+
 Agent không được hỏi lại, mà phải chạy ngầm các lệnh terminal (sử dụng Run Command) theo đúng thứ tự sau:
 
 ### 1. Kiểm tra Code
@@ -9,7 +11,7 @@ Agent không được hỏi lại, mà phải chạy ngầm các lệnh terminal
 
 ### 2. Tự Động Commit theo Rule
 * Đọc kỹ file `GIT_COMMIT_RULES.md` để lấy định dạng.
-* Chạy lệnh `git add .` (hoặc các file tương ứng).
+* Stage các file thuộc task bằng danh sách có chủ đích; không gom thay đổi ngoài scope.
 * Chạy lệnh `git commit -m "[TICKET-ID] <type>(<scope>): <subject>"` và đảm bảo commit chia nhỏ hợp lý.
 
 ### 3. Tự Động Push Code
@@ -23,4 +25,4 @@ Agent không được hỏi lại, mà phải chạy ngầm các lệnh terminal
 ---
 
 **💡 Hướng dẫn dành cho User (Bạn chỉ cần copy/paste câu này):**
-> *"Tôi đã code xong Task [Tên Task]. Hãy chạy Auto Workflow dựa trên file `.agents/workflows/AUTO_WORKFLOW.md` để tự dọn dẹp, commit chuẩn GitLab, push lên và tạo sẵn template PR cho tôi!"*
+> *"Tôi đã code xong Task [Tên Task]. Hãy dùng `$app001-delivery-workflow` và chạy Auto Workflow dựa trên file `.agents/workflows/AUTO_WORKFLOW.md` để kiểm tra, commit chuẩn GitLab, push lên và tạo sẵn template PR cho tôi!"*

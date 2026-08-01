@@ -1,0 +1,4 @@
+interface:
+  display_name: "App001 Delivery Workflow"
+  short_description: "Preflight, plan, verify và ship KMP an toàn"
+  default_prompt: "Dùng $app001-delivery-workflow để triển khai task theo workflow App001HeartRate: preflight, plan, review, verification và handoff."

@@ -22,3 +22,9 @@ Các quy tắc chuyên môn đầy đủ nằm tại [`docs/agent/KMP_AGENTS.md`
 - Dùng Koin cho dependency injection, SQLDelight/Flow cho persistence và `expect`/`actual` hoặc interface injection cho API nền tảng.
 - Không dùng `GlobalScope`/`runBlocking`; inject dispatcher và expose immutable `StateFlow`.
 - Trước khi hoàn tất thay đổi quan trọng, kiểm tra Android (`./gradlew assembleDebug`) và iOS (`./gradlew iosSimulatorArm64Binaries`) khi phù hợp.
+
+## Skill routing
+
+Trước khi đọc skill chi tiết, xem [`.agents/skills/SKILLS_INDEX.md`](.agents/skills/SKILLS_INDEX.md)
+và chỉ đọc skill phù hợp với task. Khi thêm hoặc đổi một skill trong `.agents/skills/`,
+cập nhật `SKILLS_INDEX.md` trong cùng task.
