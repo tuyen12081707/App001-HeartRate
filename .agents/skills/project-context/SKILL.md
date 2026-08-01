@@ -280,11 +280,12 @@ expect val platformModule: Module   // Android: AndroidSqliteDriver + CameraHear
 - `domain/utils/Clock.kt` defines `Clock.nowMillis()` and `SystemClock`, which delegates
   to the existing cross-platform `getCurrentTimeMillis()` expect/actual function.
 - Dashboard aggregation is offline-first over `HeartRateRepository.getAllRecords()`.
-  It derives up to one non-empty `DashboardPoint` per deterministic epoch-day bucket,
-  ordered oldest-to-newest, and excludes records outside the injected clock's current
-  seven-bucket window (including future records).
-- Demo seeding checks `AppMetadataRepository` before inserting. The marker is written
-  only after all seven record inserts return successfully.
+  It derives up to one non-empty `DashboardPoint` per device-local calendar-day bucket
+  using an injected `kotlinx.datetime.TimeZone`, ordered oldest-to-newest, and excludes
+  records outside the injected clock's current seven-day window (including future records).
+- `DemoSeedRepository.seedIfAbsent(...)` coordinates the marker check, all seven inserts,
+  and marker write in one SQLDelight transaction, so concurrent calls serialize and an
+  insert/marker failure rolls back the complete seed.
 
 ---
 

@@ -5,8 +5,10 @@ import com.tdev.heartrate.shared.data.database.HeartRateDatabase
 import com.tdev.heartrate.shared.data.database.HeartRateEntity
 import com.tdev.heartrate.shared.data.repository.HeartRateRepositoryImpl
 import com.tdev.heartrate.shared.data.repository.AppMetadataRepositoryImpl
+import com.tdev.heartrate.shared.data.repository.DemoSeedRepositoryImpl
 import com.tdev.heartrate.shared.data.repository.BloodPressureRepositoryImpl
 import com.tdev.heartrate.shared.domain.repository.AppMetadataRepository
+import com.tdev.heartrate.shared.domain.repository.DemoSeedRepository
 import com.tdev.heartrate.shared.domain.repository.HeartRateRepository
 import com.tdev.heartrate.shared.domain.repository.BloodPressureRepository
 import com.tdev.heartrate.shared.domain.usecase.AddBloodPressureRecordUseCase
@@ -20,6 +22,7 @@ import com.tdev.heartrate.shared.domain.usecase.SeedDemoHeartRateUseCase
 import com.tdev.heartrate.shared.domain.utils.Clock
 import com.tdev.heartrate.shared.domain.utils.SystemClock
 import com.tdev.heartrate.shared.domain.utils.provideAppDispatchers
+import kotlinx.datetime.TimeZone
 import com.tdev.heartrate.shared.presentation.add.AddRecordViewModel
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewModel
 import com.tdev.heartrate.shared.presentation.dashboard.DashboardViewModel
@@ -59,11 +62,12 @@ val domainModule = module {
     factory { GetHeartRateRecordUseCase(get()) }
     factory { DeleteHeartRateRecordUseCase(get()) }
     factory { GetHeartRateStatsUseCase(get()) }
-    factory { GetDashboardDataUseCase(get(), get()) }
-    factory { SeedDemoHeartRateUseCase(get(), get(), get()) }
+    factory { GetDashboardDataUseCase(get(), get(), get()) }
+    factory { SeedDemoHeartRateUseCase(get(), get()) }
     factory { GetNewsUseCase(get()) }
     factory { com.tdev.heartrate.shared.domain.usecase.GetNewsDetailUseCase(get()) }
     single<Clock> { SystemClock }
+    single<TimeZone> { TimeZone.currentSystemDefault() }
     single { provideAppDispatchers() }
 }
 
@@ -79,6 +83,7 @@ val dataModule = module {
     }
     single<HeartRateRepository> { HeartRateRepositoryImpl(get(), get()) }
     single<AppMetadataRepository> { AppMetadataRepositoryImpl(get()) }
+    single<DemoSeedRepository> { DemoSeedRepositoryImpl(get()) }
     single<BloodPressureRepository> { BloodPressureRepositoryImpl(get(), get()) }
     single<NewsRepository> { NewsRepositoryImpl(get()) }
 }

@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -20,7 +22,8 @@ class GetDashboardDataUseCaseTest {
     fun emptyRepositoryProducesEmptyDashboard() = runBlocking {
         val useCase = GetDashboardDataUseCase(
             repository = DashboardHeartRateRepository(emptyList()),
-            clock = Clock { NOW_MILLIS }
+            clock = Clock { NOW_MILLIS },
+            timeZone = TimeZone.UTC
         )
 
         assertEquals(
@@ -50,7 +53,8 @@ class GetDashboardDataUseCaseTest {
         )
         val useCase = GetDashboardDataUseCase(
             repository = DashboardHeartRateRepository(records),
-            clock = Clock { NOW_MILLIS }
+            clock = Clock { NOW_MILLIS },
+            timeZone = TimeZone.UTC
         )
 
         val result = useCase().first()
@@ -65,6 +69,40 @@ class GetDashboardDataUseCaseTest {
                 DashboardPoint(earliestDayStart, averageBpm = 70, recordCount = 1),
                 DashboardPoint(currentDayStart - DAY_MILLIS, averageBpm = 75, recordCount = 2),
                 DashboardPoint(currentDayStart, averageBpm = 80, recordCount = 1)
+            ),
+            result.points
+        )
+    }
+
+    @Test
+    fun groupsRecordsByInjectedLocalCalendarDay() = runBlocking {
+        val timeZone = TimeZone.of("UTC+02")
+        val now = Instant.parse("2024-01-08T00:30:00Z").toEpochMilliseconds()
+        val localDayTwoStart = Instant.parse("2024-01-01T22:00:00Z").toEpochMilliseconds()
+        val localDayThreeStart = Instant.parse("2024-01-02T22:00:00Z").toEpochMilliseconds()
+        val records = listOf(
+            record(
+                bpm = 72,
+                timestamp = Instant.parse("2024-01-02T21:30:00Z").toEpochMilliseconds(),
+                id = 1L
+            ),
+            record(
+                bpm = 84,
+                timestamp = Instant.parse("2024-01-02T22:30:00Z").toEpochMilliseconds(),
+                id = 2L
+            )
+        )
+
+        val result = GetDashboardDataUseCase(
+            repository = DashboardHeartRateRepository(records),
+            clock = Clock { now },
+            timeZone = timeZone
+        )().first()
+
+        assertEquals(
+            listOf(
+                DashboardPoint(localDayTwoStart, averageBpm = 72, recordCount = 1),
+                DashboardPoint(localDayThreeStart, averageBpm = 84, recordCount = 1)
             ),
             result.points
         )
