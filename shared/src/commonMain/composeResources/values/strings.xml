@@ -88,6 +88,24 @@
     <string name="dashboard_highest">Highest</string>
     <string name="dashboard_lowest">Lowest</string>
     <string name="dashboard_chart_placeholder">Line chart will be displayed here</string>
+    <string name="dashboard_latest">Latest reading</string>
+    <string name="dashboard_add_reading">Add reading</string>
+    <string name="dashboard_empty">No heart-rate readings yet.</string>
+    <string name="dashboard_error">We couldn\'t load your dashboard.</string>
+    <string name="dashboard_retry">Retry</string>
+    <string name="dashboard_chart_empty">No trend data yet</string>
+    <string name="dashboard_chart_title">Seven-day trend</string>
+    <string name="result_title">Reading result</string>
+    <string name="result_error">We couldn\'t load this reading.</string>
+    <string name="result_back_dashboard">Back to dashboard</string>
+    <string name="result_add_another">Add another reading</string>
+    <string name="history_retry">Retry</string>
+    <string name="history_delete_message">Delete this heart-rate reading?</string>
+    <string name="history_delete_confirm">Delete</string>
+    <string name="history_delete_cancel">Cancel</string>
+    <string name="history_retry_delete">Retry delete</string>
+    <string name="action_back">Back</string>
+    <string name="history_bpm_format">%1$d BPM</string>
 
     <!-- Camera Screen -->
     <string name="camera_measure_button">Measure with Camera</string>

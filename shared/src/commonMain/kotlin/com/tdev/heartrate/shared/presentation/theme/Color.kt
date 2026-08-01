@@ -2,9 +2,10 @@ package com.tdev.heartrate.shared.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
-val PrimaryRed = Color(0xFFFF405F)
-val PrimaryRedDark = Color(0xFFEE0032)
-val PrimaryRedLight = Color(0xFFFEE6EB)
+// Calm clinical palette: blue-violet primary with a soft neutral surface.
+val PrimaryRed = Color(0xFF5B67D8)
+val PrimaryRedDark = Color(0xFF3F4AA8)
+val PrimaryRedLight = Color(0xFFE8E9FF)
 
 val BackgroundWhite = Color(0xFFF7F7F7)
 val SurfaceWhite = Color(0xFFFFFFFF)
@@ -12,7 +13,7 @@ val SurfaceWhite = Color(0xFFFFFFFF)
 val TextDarkCharcoal = Color(0xFF262626)
 val TextGray = Color(0xFF737373)
 
-val HomeBackgroundTop = Color(0xFFFEF2F5)
+val HomeBackgroundTop = Color(0xFFF1F3FF)
 val DividerGray = Color(0xFFF5F5F5)
 val MutedGray = Color(0xFFA3A3A3)
 val BorderGray = Color(0xFFE5E5E5)

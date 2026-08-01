@@ -14,14 +14,31 @@ insertRecord:
 INSERT INTO HeartRateEntity(bpm, timestamp, measureType, bodyState, note)
 VALUES (?, ?, ?, ?, ?);
 
+lastInsertRowId:
+SELECT last_insert_rowid();
+
 deleteRecord:
 DELETE FROM HeartRateEntity WHERE id = ?;
 
 getAllRecords:
 SELECT * FROM HeartRateEntity ORDER BY timestamp DESC;
 
+getRecordById:
+SELECT * FROM HeartRateEntity WHERE id = ?;
+
 getAverageBpm:
 SELECT AVG(bpm) FROM HeartRateEntity;
+
+CREATE TABLE AppMetadataEntity (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+getMetadata:
+SELECT value FROM AppMetadataEntity WHERE key = ?;
+
+upsertMetadata:
+INSERT OR REPLACE INTO AppMetadataEntity(key, value) VALUES (?, ?);
 
 CREATE TABLE BloodPressureEntity (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,

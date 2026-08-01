@@ -17,7 +17,7 @@ class HeartRateRepositoryImpl(
 
     private val queries = database.heartRateDatabaseQueries
 
-    override suspend fun insertRecord(record: HeartRateRecord) {
+    override suspend fun insertRecord(record: HeartRateRecord): Long {
         queries.insertRecord(
             bpm = record.bpm.toLong(),
             timestamp = record.timestamp,
@@ -25,6 +25,11 @@ class HeartRateRepositoryImpl(
             bodyState = record.bodyState,
             note = record.note
         )
+        return queries.lastInsertRowId().executeAsOne()
+    }
+
+    override suspend fun getRecordById(id: Long): HeartRateRecord? {
+        return queries.getRecordById(id).executeAsOneOrNull()?.toDomainModel()
     }
 
     override suspend fun deleteRecord(id: Long) {

@@ -1,6 +1,5 @@
 package com.tdev.heartrate.shared.presentation.add
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,31 +16,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -51,7 +42,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -60,10 +50,20 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app001heartrate.shared.generated.resources.Res
 import app001heartrate.shared.generated.resources.add_record_body_state
+import app001heartrate.shared.generated.resources.add_record_bpm_label
+import app001heartrate.shared.generated.resources.add_record_error_invalid
+import app001heartrate.shared.generated.resources.add_record_error_range
 import app001heartrate.shared.generated.resources.add_record_note_label
-import app001heartrate.shared.generated.resources.camera_measure_button
+import app001heartrate.shared.generated.resources.add_record_save_button
+import app001heartrate.shared.generated.resources.add_record_title
+import app001heartrate.shared.generated.resources.action_back
+import app001heartrate.shared.generated.resources.body_state_after_waking
+import app001heartrate.shared.generated.resources.body_state_before_bed
+import app001heartrate.shared.generated.resources.body_state_exercising
+import app001heartrate.shared.generated.resources.body_state_resting
+import app001heartrate.shared.generated.resources.body_state_sleeping
 import com.tdev.heartrate.shared.domain.model.BodyState
-import com.tdev.heartrate.shared.presentation.components.AnimatedPrimaryButton
+import com.tdev.heartrate.shared.presentation.DataState
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.stringResource
 
@@ -71,310 +71,99 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun AddRecordScreen(
     viewModel: AddRecordViewModel,
-    onNavigateBack: () -> Unit,
-    onOpenCamera: () -> Unit = {},
+    onBack: () -> Unit,
+    onSaved: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(viewModel.sideEffect) {
+    LaunchedEffect(viewModel) {
         viewModel.sideEffect.collectLatest { effect ->
-            when (effect) {
-                is AddRecordSideEffect.NavigateBack -> {
-                    onNavigateBack()
-                }
-                is AddRecordSideEffect.NavigateToResult -> {
-                }
-                is AddRecordSideEffect.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(effect.message)
-                }
-            }
+            if (effect is AddRecordSideEffect.NavigateToResult) onSaved(effect.recordId)
         }
     }
-
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Add Heart Rate", color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { TopAppBar(title = { Text(stringResource(Res.string.add_record_title)) }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.action_back)) } }) },
         modifier = modifier
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Input Card (Contains WheelPicker)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Select your heart rate",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    var tempBpm by remember { mutableStateOf(80) }
-                    
-                    LaunchedEffect(uiState.bpm) {
-                        uiState.bpm.toIntOrNull()?.let {
-                            tempBpm = it
-                        }
-                    }
-
-                    WheelNumberPicker(
-                        selectedValue = tempBpm,
-                        onValueChange = {
-                            tempBpm = it
-                            viewModel.onIntent(AddRecordIntent.UpdateBpm(it.toString()))
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "BPM",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Body State Selection
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            Spacer(Modifier.height(4.dp))
+            Text(stringResource(Res.string.add_record_bpm_label), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            WheelNumberPicker(
+                selectedValue = uiState.bpm.toIntOrNull() ?: 80,
+                onValueChange = { viewModel.onIntent(AddRecordIntent.UpdateBpm(it.toString())) }
+            )
+            if (uiState.fieldErrors.containsKey("bpm")) {
                 Text(
-                    text = stringResource(Res.string.add_record_body_state),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    text = if (uiState.bpm.toIntOrNull() == null) stringResource(Res.string.add_record_error_invalid) else stringResource(Res.string.add_record_error_range),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    BodyState.entries.forEach { state ->
-                        val emoji = when (state) {
-                            BodyState.RESTING -> "😴"
-                            BodyState.EXERCISING -> "🏃"
-                            BodyState.SLEEPING -> "🛌"
-                            BodyState.AFTER_WAKING_UP -> "🌅"
-                            BodyState.BEFORE_BED -> "🌙"
-                        }
-                        BodyStateTile(
-                            state = state,
-                            emoji = emoji,
-                            isSelected = uiState.bodyState == state,
-                            onClick = { viewModel.onIntent(AddRecordIntent.UpdateBodyState(state)) }
-                        )
-                    }
+            }
+            Text(stringResource(Res.string.add_record_body_state), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                BodyState.entries.forEach { state ->
+                    BodyStateTile(state, bodyStateLabel(state), state == uiState.bodyState) { viewModel.onIntent(AddRecordIntent.UpdateBodyState(state)) }
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Note
+            if (uiState.fieldErrors.containsKey("bodyState")) Text(uiState.fieldErrors.getValue("bodyState"), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(
                 value = uiState.note,
                 onValueChange = { viewModel.onIntent(AddRecordIntent.UpdateNote(it)) },
                 label = { Text(stringResource(Res.string.add_record_note_label)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                minLines = 2
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                shape = RoundedCornerShape(16.dp)
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            val isFormValid = uiState.bpm.isNotEmpty() && (uiState.bpm.toIntOrNull() in 40..220) && uiState.bodyState != null
-
-            AnimatedPrimaryButton(
+            uiState.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Button(
                 onClick = { viewModel.onIntent(AddRecordIntent.SaveRecord) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(56.dp),
-                enabled = isFormValid && !uiState.isLoading
+                enabled = !uiState.isLoading,
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                shape = RoundedCornerShape(18.dp)
             ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                } else {
-                    Text("Confirm & View Result", style = MaterialTheme.typography.titleMedium)
-                }
+                if (uiState.isLoading) CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
+                else Text(stringResource(Res.string.add_record_save_button))
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            AnimatedPrimaryButton(
-                onClick = onOpenCamera,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(56.dp),
-            ) {
-                Text(stringResource(Res.string.camera_measure_button), style = MaterialTheme.typography.titleMedium)
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(20.dp))
         }
     }
+}
+
+@Composable
+private fun bodyStateLabel(state: BodyState): String = when (state) {
+    BodyState.RESTING -> stringResource(Res.string.body_state_resting)
+    BodyState.EXERCISING -> stringResource(Res.string.body_state_exercising)
+    BodyState.SLEEPING -> stringResource(Res.string.body_state_sleeping)
+    BodyState.AFTER_WAKING_UP -> stringResource(Res.string.body_state_after_waking)
+    BodyState.BEFORE_BED -> stringResource(Res.string.body_state_before_bed)
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun WheelNumberPicker(
-    selectedValue: Int,
-    onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    range: IntRange = 40..220
-) {
-    val list = remember { range.toList() }
-    val initialIndex = remember { list.indexOf(selectedValue).coerceAtLeast(0) }
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
-    val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
-
-    val currentCenteredIndex by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex
-        }
-    }
-
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (!listState.isScrollInProgress) {
-            val centeredValue = list.getOrNull(currentCenteredIndex)
-            if (centeredValue != null && centeredValue != selectedValue) {
-                onValueChange(centeredValue)
-            }
-        }
-    }
-
+fun WheelNumberPicker(selectedValue: Int, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier, range: IntRange = 30..250) {
+    val values = remember(range) { range.toList() }
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (selectedValue - range.first).coerceIn(0, values.lastIndex))
+    val flingBehavior = rememberSnapFlingBehavior(listState)
+    val centeredIndex by remember { derivedStateOf { listState.firstVisibleItemIndex.coerceIn(0, values.lastIndex) } }
+    LaunchedEffect(listState.isScrollInProgress) { if (!listState.isScrollInProgress) onValueChange(values[centeredIndex]) }
     LaunchedEffect(selectedValue) {
-        val targetIndex = list.indexOf(selectedValue)
-        if (targetIndex != -1 && listState.firstVisibleItemIndex != targetIndex) {
-            listState.scrollToItem(targetIndex)
-        }
+        val index = values.indexOf(selectedValue)
+        if (index >= 0 && index != listState.firstVisibleItemIndex) listState.scrollToItem(index)
     }
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(180.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .height(60.dp)
-                .background(Color(0xFFFFEBEE), shape = RoundedCornerShape(16.dp))
-        )
-
-        LazyColumn(
-            state = listState,
-            flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(vertical = 60.dp),
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            items(list.size) { index ->
-                val value = list[index]
-                val isSelected = index == currentCenteredIndex
-                
-                val scale by animateFloatAsState(if (isSelected) 1.5f else 0.9f)
-                val alpha by animateFloatAsState(if (isSelected) 1f else 0.3f)
-                val color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = alpha)
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = value.toString(),
-                        fontSize = 24.sp,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                        color = color,
-                        modifier = Modifier.scale(scale)
-                    )
-                }
+    Box(modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth(.58f).height(58.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(16.dp)))
+        LazyColumn(state = listState, flingBehavior = flingBehavior, contentPadding = PaddingValues(vertical = 60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            items(values.size) { index ->
+                val selected = index == centeredIndex
+                Text(values[index].toString(), modifier = Modifier.height(60.dp).fillMaxWidth().scale(if (selected) 1.45f else .9f), color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .45f), fontSize = 24.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
 }
 
 @Composable
-fun BodyStateTile(state: BodyState, emoji: String, isSelected: Boolean, onClick: () -> Unit) {
-    val bgColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-
-    Surface(
-        modifier = Modifier
-            .size(70.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = bgColor,
-        shadowElevation = if (isSelected) 0.dp else 2.dp,
-        border = androidx.compose.foundation.BorderStroke(2.dp, borderColor)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Text(text = emoji, fontSize = 24.sp)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = state.name.lowercase().replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
+fun BodyStateTile(state: BodyState, label: String, isSelected: Boolean, onClick: () -> Unit) {
+    Box(Modifier.size(92.dp).background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(8.dp), contentAlignment = Alignment.Center) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }

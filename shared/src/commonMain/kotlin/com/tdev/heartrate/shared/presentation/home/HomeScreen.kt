@@ -22,6 +22,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tdev.heartrate.shared.domain.model.News
+import com.tdev.heartrate.shared.domain.model.DashboardPoint
+import com.tdev.heartrate.shared.presentation.components.HeartRateChart
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -122,7 +124,9 @@ fun NewsList(newsList: List<News>, heartRateHistory: List<Int>, onNewsClick: (St
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            HeartRateChart(dataPoints = heartRateHistory)
+            HeartRateChart(points = heartRateHistory.mapIndexed { index, bpm ->
+                DashboardPoint(dayStartMillis = index.toLong(), averageBpm = bpm, recordCount = 1)
+            })
         }
         items(newsList) { news ->
             NewsItemCard(news, onClick = { onNewsClick(news.url) })

@@ -7,216 +7,140 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.MaterialTheme
-import com.tdev.heartrate.shared.presentation.theme.AppTheme
-import com.tdev.heartrate.shared.presentation.components.CustomBottomBar
-import com.tdev.heartrate.shared.presentation.components.BottomBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import app001heartrate.shared.generated.resources.Res
 import app001heartrate.shared.generated.resources.tab_dashboard
 import app001heartrate.shared.generated.resources.tab_history
 import app001heartrate.shared.generated.resources.tab_news
 import app001heartrate.shared.generated.resources.tab_settings
-import org.jetbrains.compose.resources.stringResource
+import com.tdev.heartrate.shared.di.appConfigModule
+import com.tdev.heartrate.shared.di.dataModule
+import com.tdev.heartrate.shared.di.domainModule
+import com.tdev.heartrate.shared.di.networkModule
+import com.tdev.heartrate.shared.di.platformModule
+import com.tdev.heartrate.shared.di.presentationModule
+import com.tdev.heartrate.shared.domain.model.AppConfig
+import com.tdev.heartrate.shared.domain.model.StartupData
+import com.tdev.heartrate.shared.domain.usecase.AcceptDisclaimerUseCase
+import com.tdev.heartrate.shared.presentation.AppStartupCoordinator
+import com.tdev.heartrate.shared.presentation.DataState
+import com.tdev.heartrate.shared.presentation.add.AddRecordIntent
 import com.tdev.heartrate.shared.presentation.add.AddRecordScreen
 import com.tdev.heartrate.shared.presentation.add.AddRecordViewModel
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureScreen
 import com.tdev.heartrate.shared.presentation.bloodpressure.BloodPressureViewModel
-import com.tdev.heartrate.shared.presentation.dashboard.DashboardScreen
-import com.tdev.heartrate.shared.presentation.dashboard.DashboardViewModel
-import com.tdev.heartrate.shared.presentation.history.HistoryScreen
-import com.tdev.heartrate.shared.presentation.history.HistoryViewModel
-import com.tdev.heartrate.shared.presentation.disclaimer.DisclaimerScreen
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.compose.KoinApplication
-import com.tdev.heartrate.shared.di.dataModule
-import com.tdev.heartrate.shared.di.domainModule
-import com.tdev.heartrate.shared.di.platformModule
-import com.tdev.heartrate.shared.di.presentationModule
-import com.tdev.heartrate.shared.di.networkModule
-import com.tdev.heartrate.shared.presentation.home.HomeScreen
-
 import com.tdev.heartrate.shared.presentation.camera.CameraMeasurementScreen
 import com.tdev.heartrate.shared.presentation.camera.FailedScanScreen
+import com.tdev.heartrate.shared.presentation.components.BottomBarItem
+import com.tdev.heartrate.shared.presentation.components.CustomBottomBar
+import com.tdev.heartrate.shared.presentation.dashboard.DashboardScreen
+import com.tdev.heartrate.shared.presentation.dashboard.DashboardViewModel
+import com.tdev.heartrate.shared.presentation.disclaimer.DisclaimerScreen
+import com.tdev.heartrate.shared.presentation.history.HistoryScreen
+import com.tdev.heartrate.shared.presentation.history.HistoryViewModel
+import com.tdev.heartrate.shared.presentation.home.HomeScreen
+import com.tdev.heartrate.shared.presentation.navigation.AppNavigator
+import com.tdev.heartrate.shared.presentation.navigation.AppRoute
+import com.tdev.heartrate.shared.presentation.navigation.MainTab
+import com.tdev.heartrate.shared.presentation.navigation.resultViewModelKey
+import com.tdev.heartrate.shared.presentation.profile.ProfileScreen
+import com.tdev.heartrate.shared.presentation.result.ResultViewModel
+import com.tdev.heartrate.shared.presentation.result.ResultScreen
+import com.tdev.heartrate.shared.presentation.theme.AppTheme
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.KoinApplication
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.module.Module
+import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 
-import androidx.compose.material.icons.filled.Person
-import com.tdev.heartrate.shared.presentation.profile.ProfileScreen
-
-import com.tdev.heartrate.shared.presentation.result.ResultScreen
-
-enum class Screen {
-    DISCLAIMER, HOME, DASHBOARD, HISTORY, ADD_RECORD, BLOOD_PRESSURE_RECORD,
-    CAMERA_MEASUREMENT, PROFILE, RESULT, FAILED_SCAN, NEWS_DETAIL
-}
-
 @Composable
-fun App(appModule: Module = module { }) {
+fun App(
+    appConfig: AppConfig = AppConfig(demoDataEnabled = false),
+    appModule: Module = module { },
+    onStartupState: (DataState<StartupData>) -> Unit = {}
+) {
     KoinApplication(application = {
-        modules(
-            appModule,
-            platformModule,
-            domainModule,
-            dataModule,
-            presentationModule,
-            networkModule
-        )
+        modules(appModule, platformModule, domainModule, dataModule, presentationModule, networkModule, appConfigModule(appConfig))
     }) {
-        AppTheme {
-            var currentScreen by remember { mutableStateOf(Screen.DISCLAIMER) }
-            var prefilledBpm by remember { mutableStateOf<String?>(null) }
-            var lastSavedBpm by remember { mutableStateOf(0) }
-            var lastSavedBodyState by remember { mutableStateOf("") }
-            var selectedNewsUrl by remember { mutableStateOf("") }
+        val startupCoordinator = koinInject<AppStartupCoordinator>()
+        val acceptDisclaimer = koinInject<AcceptDisclaimerUseCase>()
+        var startupState by remember { mutableStateOf<DataState<StartupData>>(DataState.Idle) }
+        val navigator = remember { AppNavigator(AppRoute.Disclaimer) }
+        val scope = rememberCoroutineScope()
+        val route by navigator.route.collectAsState()
 
-            androidx.compose.material3.Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
+        LaunchedEffect(startupCoordinator) {
+            startupCoordinator.start().collect { state ->
+                startupState = state
+                onStartupState(state)
+                val startup = (state as? DataState.Success)?.data
+                if (startup?.consentAccepted == true) navigator.navigate(AppRoute.Main(MainTab.Dashboard))
+            }
+        }
+
+        AppTheme {
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                val mainTab = (route as? AppRoute.Main)?.tab
+                val hideBottomBar = route !is AppRoute.Main
                 Scaffold(
                     bottomBar = {
-                        val hideBottomBarScreens = listOf(
-                            Screen.DISCLAIMER, Screen.CAMERA_MEASUREMENT, Screen.ADD_RECORD,
-                            Screen.BLOOD_PRESSURE_RECORD, Screen.RESULT, Screen.FAILED_SCAN,
-                            Screen.NEWS_DETAIL
-                        )
-                        if (currentScreen !in hideBottomBarScreens) {
+                        if (!hideBottomBar) {
                             CustomBottomBar(
                                 items = listOf(
-                                    BottomBarItem(
-                                        title = stringResource(Res.string.tab_dashboard),
-                                        icon = Icons.Default.Home,
-                                        isSelected = currentScreen == Screen.DASHBOARD,
-                                        onClick = { currentScreen = Screen.DASHBOARD }
-                                    ),
-                                    BottomBarItem(
-                                        title = stringResource(Res.string.tab_history),
-                                        icon = Icons.AutoMirrored.Filled.List,
-                                        isSelected = currentScreen == Screen.HISTORY,
-                                        onClick = { currentScreen = Screen.HISTORY }
-                                    ),
-                                    BottomBarItem(
-                                        title = stringResource(Res.string.tab_news),
-                                        icon = Icons.Default.Info,
-                                        isSelected = currentScreen == Screen.HOME,
-                                        onClick = { currentScreen = Screen.HOME }
-                                    ),
-                                    BottomBarItem(
-                                        title = stringResource(Res.string.tab_settings),
-                                        icon = Icons.Default.Person,
-                                        isSelected = currentScreen == Screen.PROFILE,
-                                        onClick = { currentScreen = Screen.PROFILE }
-                                    )
+                                    BottomBarItem(stringResource(Res.string.tab_dashboard), Icons.Default.Home, mainTab == MainTab.Dashboard) { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) },
+                                    BottomBarItem(stringResource(Res.string.tab_history), Icons.AutoMirrored.Filled.List, mainTab == MainTab.History) { navigator.navigate(AppRoute.Main(MainTab.History)) },
+                                    BottomBarItem(stringResource(Res.string.tab_news), Icons.Default.Info, mainTab == MainTab.News) { navigator.navigate(AppRoute.Main(MainTab.News)) },
+                                    BottomBarItem(stringResource(Res.string.tab_settings), Icons.Default.Person, mainTab == MainTab.Profile) { navigator.navigate(AppRoute.Main(MainTab.Profile)) }
                                 )
                             )
                         }
-                    },
+                    }
                 ) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding)) {
-                        when (currentScreen) {
-                            Screen.DISCLAIMER -> {
-                                DisclaimerScreen(
-                                    onAgree = { currentScreen = Screen.DASHBOARD }
-                                )
+                    Box(Modifier.padding(innerPadding)) {
+                        when (val currentRoute = route) {
+                            AppRoute.Disclaimer -> DisclaimerScreen(onAgree = {
+                                scope.launch {
+                                    acceptDisclaimer()
+                                    navigator.navigate(AppRoute.Main(MainTab.Dashboard))
+                                }
+                            })
+                            is AppRoute.Main -> when (currentRoute.tab) {
+                                MainTab.Dashboard -> DashboardScreen(koinViewModel<DashboardViewModel>(), { navigator.navigate(AppRoute.AddHeartRate) }, { navigator.navigate(AppRoute.Main(it)) })
+                                MainTab.History -> HistoryScreen(koinViewModel<HistoryViewModel>(), { navigator.navigate(AppRoute.Main(it)) })
+                                MainTab.News -> HomeScreen(onNavigateToAddRecord = { navigator.navigate(AppRoute.AddHeartRate) }, onNavigateToNewsDetail = { navigator.navigate(AppRoute.NewsDetail(it)) })
+                                MainTab.Profile -> ProfileScreen()
                             }
-                            Screen.HOME -> {
-                                HomeScreen(
-                                    onNavigateToAddRecord = { currentScreen = Screen.ADD_RECORD },
-                                    onNavigateToNewsDetail = { url -> 
-                                        selectedNewsUrl = url
-                                        currentScreen = Screen.NEWS_DETAIL
-                                    }
-                                )
-                            }
-                            Screen.DASHBOARD -> {
-                                val viewModel = koinViewModel<DashboardViewModel>()
-                                DashboardScreen(
-                                    viewModel = viewModel,
-                                    onNavigateToAddRecord = { currentScreen = Screen.ADD_RECORD },
-                                    onNavigateToBloodPressure = {
-                                        currentScreen = Screen.BLOOD_PRESSURE_RECORD
-                                    }
-                                )
-                            }
-                            Screen.HISTORY -> {
-                                val viewModel = koinViewModel<HistoryViewModel>()
-                                HistoryScreen(viewModel = viewModel)
-                            }
-                            Screen.ADD_RECORD -> {
+                            AppRoute.AddHeartRate -> {
                                 val viewModel = koinViewModel<AddRecordViewModel>()
-                                // If we have prefilled BPM, update the viewmodel ONCE.
-                                androidx.compose.runtime.LaunchedEffect(prefilledBpm) {
-                                    prefilledBpm?.let {
-                                        viewModel.onIntent(com.tdev.heartrate.shared.presentation.add.AddRecordIntent.UpdateBpm(it))
-                                        prefilledBpm = null // consume
-                                    }
+                                LaunchedEffect(viewModel) {
+                                    viewModel.onIntent(AddRecordIntent.ResetForNewEntry)
                                 }
-                                // Listen to save result side effect
-                                androidx.compose.runtime.LaunchedEffect(viewModel.sideEffect) {
-                                    viewModel.sideEffect.collect { effect ->
-                                        if (effect is com.tdev.heartrate.shared.presentation.add.AddRecordSideEffect.NavigateToResult) {
-                                            lastSavedBpm = effect.bpm
-                                            lastSavedBodyState = viewModel.uiState.value.bodyState?.name
-                                                ?.lowercase()
-                                                ?.replaceFirstChar { it.uppercase() } ?: ""
-                                            currentScreen = Screen.RESULT
-                                        }
-                                    }
-                                }
-                                AddRecordScreen(
-                                    viewModel = viewModel,
-                                    onNavigateBack = { currentScreen = Screen.DASHBOARD },
-                                    onOpenCamera = { currentScreen = Screen.CAMERA_MEASUREMENT }
-                                )
+                                AddRecordScreen(viewModel, { navigator.back() }, { recordId -> navigator.navigate(AppRoute.Result(recordId)) })
                             }
-                            Screen.BLOOD_PRESSURE_RECORD -> {
-                                val viewModel = koinViewModel<BloodPressureViewModel>()
-                                BloodPressureScreen(
-                                    viewModel = viewModel,
-                                    onNavigateBack = { currentScreen = Screen.DASHBOARD }
-                                )
+                            is AppRoute.Result -> {
+                                val viewModel = koinViewModel<ResultViewModel>(key = currentRoute.resultViewModelKey(), parameters = { parametersOf(currentRoute.recordId) })
+                                ResultScreen(viewModel, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) }, { navigator.navigate(AppRoute.AddHeartRate) })
                             }
-                            Screen.CAMERA_MEASUREMENT -> {
-                                CameraMeasurementScreen(
-                                    onNavigateBack = { currentScreen = Screen.ADD_RECORD },
-                                    onMeasurementCompleted = { bpm ->
-                                        prefilledBpm = bpm.toString()
-                                        currentScreen = Screen.ADD_RECORD
-                                    },
-                                    onMeasurementFailed = { currentScreen = Screen.FAILED_SCAN }
-                                )
-                            }
-                            Screen.PROFILE -> {
-                                ProfileScreen()
-                            }
-                            Screen.RESULT -> {
-                                ResultScreen(
-                                    bpm = lastSavedBpm,
-                                    bodyState = lastSavedBodyState,
-                                    onGoHome = { currentScreen = Screen.DASHBOARD },
-                                    onMeasureAgain = { currentScreen = Screen.ADD_RECORD }
-                                )
-                            }
-                            Screen.FAILED_SCAN -> {
-                                FailedScanScreen(
-                                    onTryAgain = { currentScreen = Screen.CAMERA_MEASUREMENT },
-                                    onGoHome = { currentScreen = Screen.DASHBOARD }
-                                )
-                            }
-                            Screen.NEWS_DETAIL -> {
-                                com.tdev.heartrate.shared.presentation.newsdetail.NewsDetailScreen(
-                                    url = selectedNewsUrl,
-                                    onNavigateBack = { currentScreen = Screen.HOME }
-                                )
-                            }
+                            AppRoute.BloodPressure -> BloodPressureScreen(koinViewModel<BloodPressureViewModel>(), { navigator.back() })
+                            AppRoute.CameraMeasurement -> CameraMeasurementScreen({ navigator.back() }, { navigator.navigate(AppRoute.AddHeartRate) }, { navigator.navigate(AppRoute.FailedScan) })
+                            AppRoute.FailedScan -> FailedScanScreen({ navigator.navigate(AppRoute.CameraMeasurement) }, { navigator.navigate(AppRoute.Main(MainTab.Dashboard)) })
+                            is AppRoute.NewsDetail -> com.tdev.heartrate.shared.presentation.newsdetail.NewsDetailScreen(currentRoute.url) { navigator.back() }
                         }
                     }
                 }

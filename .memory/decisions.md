@@ -27,3 +27,8 @@ Format:
 - Lý do: Tránh sealed state trùng lặp và tạo quy ước state nhất quán giữa các màn hình.
 - Phạm vi: Presentation state và validation/verification của MVP.
 - Trạng thái: active
+
+## 2026-08-01 — Decision
+
+- Nội dung: Task 2 clarification: demo seeding phải atomic — bảy heart-rate inserts và marker demo_seed_v1 nằm trong cùng transaction, retry không tạo duplicate. Dashboard day buckets dùng calendar day theo timezone thiết bị (injectable để test), không hard-code UTC.
+- Trạng thái: active

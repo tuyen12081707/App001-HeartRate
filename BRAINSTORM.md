@@ -45,6 +45,27 @@ khi lập plan.
   thời gian hiện tại khi Save.
 - Validation Android/iOS đã pass. Commit được thực hiện sau khi cập nhật memory.
 
+### DONE — Deterministic Dashboard Data and Demo Seed
+
+- Ngày: 2026-08-01
+- Dùng `Clock` inject được cho timestamp, dashboard và seed; `SystemClock` bọc
+  `getCurrentTimeMillis()` hiện có nên vẫn compile chung Android/iOS.
+- Dashboard chỉ aggregate bảy device-local calendar-day bucket gần nhất theo clock và
+  timezone inject được, loại dữ liệu cũ và tương lai, chart point sắp xếp từ cũ đến mới.
+- Demo seed gồm đúng bảy bản ghi manual cố định. `DemoSeedRepository` kiểm tra marker,
+  insert và ghi `demo_seed_v1` trong cùng SQLDelight transaction; lỗi rollback toàn bộ,
+  lần chạy sau hoặc chạy đồng thời không insert thêm.
+- Validation common Android host test, Android main compile và iOS simulator ARM64
+  compile đã pass.
+
+### DONE — Startup consent and demo coordination
+
+- Ngày: 2026-08-01
+- `AppStartupCoordinator` emits shared `DataState` startup states, persists disclaimer
+  consent in metadata, and gates the atomic demo seed behind `AppConfig`.
+- Android derives demo mode from `ApplicationInfo.FLAG_DEBUGGABLE`; shared/iOS defaults
+  remain disabled.
+
 ## Brainstorm Inbox
 
 ### IDEA — Blood Pressure History

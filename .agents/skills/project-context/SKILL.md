@@ -21,7 +21,7 @@ description: "Bản đồ sống" của dự án App001HeartRate — toàn bộ 
 | DB queries accessor | `database.heartRateDatabaseQueries` |
 | API base | Ktor `HttpClient` với `ContentNegotiation + kotlinx.json` |
 | DI | Koin (`networkModule`, `dataModule`, `domainModule`, `presentationModule`, `platformModule`) |
-| Navigation | State-based: `enum class Screen` + `currentScreen` state trong `App.kt` |
+| Navigation | Typed state-based routes via `AppNavigator`/`AppRoute` in `App.kt` |
 
 ### Android Compose Resources workaround (AGP 9)
 
@@ -68,6 +68,11 @@ CREATE TABLE BloodPressureEntity (
     timestamp INTEGER NOT NULL,
     note TEXT
 );
+
+CREATE TABLE AppMetadataEntity (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
 ```
 
 ### Queries đã có
@@ -76,11 +81,16 @@ CREATE TABLE BloodPressureEntity (
 | `insertRecord` | `INSERT INTO HeartRateEntity(bpm, timestamp, measureType, bodyState, note) VALUES (?, ?, ?, ?, ?)` |
 | `deleteRecord` | `DELETE FROM HeartRateEntity WHERE id = ?` |
 | `getAllRecords` | `SELECT * FROM HeartRateEntity ORDER BY timestamp DESC` |
+| `getRecordById` | `SELECT * FROM HeartRateEntity WHERE id = ?` |
+| `lastInsertRowId` | `SELECT last_insert_rowid()` immediately after an insert on the same connection |
 | `getAverageBpm` | `SELECT AVG(bpm) FROM HeartRateEntity` |
+| `getMetadata` | `SELECT value FROM AppMetadataEntity WHERE key = ?` |
+| `upsertMetadata` | SQLite-compatible `INSERT OR REPLACE` by metadata key |
 | `insertBloodPressureRecord` | `INSERT INTO BloodPressureEntity(systolic, diastolic, pulse, timestamp, note) VALUES (?, ?, ?, ?, ?)` |
 | `getAllBloodPressureRecords` | `SELECT * FROM BloodPressureEntity ORDER BY timestamp DESC` |
 
-**Migration hiện có**: `1.sqm` tạo `BloodPressureEntity` cho database đã cài trước đó.
+**Migration hiện có**: `1.sqm` tạo `BloodPressureEntity`; `2.sqm` tạo
+`AppMetadataEntity` cho database đã cài trước đó.
 
 ---
 
@@ -113,6 +123,8 @@ fun NewsDetailDto.toDomain(): NewsDetail
 ```kotlin
 data class HeartRateRecord(val id: Long = 0, val bpm: Int, val timestamp: Long, val measureType: MeasureType, val bodyState: BodyState, val note: String? = null)
 data class HeartRateStats(val averageBpm: Int = 0, val maxBpm: Int = 0, val minBpm: Int = 0, val totalRecords: Int = 0)
+data class DashboardPoint(val dayStartMillis: Long, val averageBpm: Int, val recordCount: Int)
+data class DashboardData(val latest: HeartRateRecord?, val averageBpm: Int, val minBpm: Int, val maxBpm: Int, val totalRecords: Int, val points: List<DashboardPoint>)
 data class BloodPressureRecord(val id: Long = 0, val systolic: Int, val diastolic: Int, val pulse: Int, val timestamp: Long, val note: String? = null)
 data class News(val title: String, val description: String, val urlToImage: String?, val url: String, val publishedAt: String)
 data class NewsDetail(val url: String, val content: String)  // kiểm tra file
@@ -130,10 +142,16 @@ object BloodPressureInputConstraints // range nhập Systolic/Diastolic/Pulse
 ```kotlin
 // HeartRateRepository.kt
 interface HeartRateRepository {
-    suspend fun insertRecord(record: HeartRateRecord)
+    suspend fun insertRecord(record: HeartRateRecord): Long
+    suspend fun getRecordById(id: Long): HeartRateRecord?
     suspend fun deleteRecord(id: Long)
     fun getAllRecords(): Flow<List<HeartRateRecord>>
     suspend fun getAverageBpm(): Double
+}
+
+interface AppMetadataRepository {
+    suspend fun get(key: String): String?
+    suspend fun put(key: String, value: String)
 }
 
 interface BloodPressureRepository {
@@ -151,13 +169,27 @@ interface NewsRepository {
 ### Use Cases (`domain/usecase/`) — Đã có
 | Class | Constructor | invoke() signature |
 |-------|------------|-------------------|
-| `AddHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(bpm: Int, measureType: MeasureType = MANUAL, bodyState: BodyState, note: String? = null)` |
+| `AddHeartRateRecordUseCase` | `(HeartRateRepository, Clock)` | `suspend invoke(bpm, measureType, bodyState, note, timestamp: Long? = null): Long` |
+| `GetHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(id: Long): HeartRateRecord?` |
+| `GetDashboardDataUseCase` | `(HeartRateRepository, Clock)` | `invoke(): Flow<DashboardData>`; current deterministic epoch-day bucket plus six prior buckets |
+| `SeedDemoHeartRateUseCase` | `(HeartRateRepository, AppMetadataRepository, Clock)` | `suspend invoke(): Boolean`; inserts seven fixed manual records once using `demo_seed_v1` |
 | `AddBloodPressureRecordUseCase` | `(BloodPressureRepository)` | `suspend invoke(systolic: Int, diastolic: Int, pulse: Int, timestamp: Long = now, note: String? = null)` |
 | `GetHeartRateHistoryUseCase` | `(HeartRateRepository)` | `invoke(): Flow<List<HeartRateRecord>>` |
 | `DeleteHeartRateRecordUseCase` | `(HeartRateRepository)` | `suspend invoke(id: Long)` |
 | `GetHeartRateStatsUseCase` | `(HeartRateRepository)` | `invoke(): Flow<HeartRateStats>` |
 | `GetNewsUseCase` | `(NewsRepository)` | `suspend invoke(): List<News>` |
 | `GetNewsDetailUseCase` | `(NewsRepository)` | kiểm tra file |
+
+### Startup consent/demo coordination (2026-08-01)
+
+- `AppConfig(demoDataEnabled: Boolean)` controls whether debug/demo startup seeding is enabled.
+- `StartupData(consentAccepted: Boolean)` is the startup result consumed by presentation/navigation.
+- `GetDisclaimerStatusUseCase` and `AcceptDisclaimerUseCase` persist/read the
+  `disclaimer_accepted` metadata key (`"true"` means accepted).
+- `AppStartupCoordinator.start(): Flow<DataState<StartupData>>` emits Loading, then
+  Success with consent status after optional `SeedDemoHeartRateUseCase` execution,
+  or Error carrying the original failure. Demo seeding is skipped when
+  `AppConfig.demoDataEnabled` is false.
 
 ---
 
@@ -179,9 +211,9 @@ abstract class BaseViewModel<S, I, E>(initialState: S) : ViewModel() {
 | ViewModel | UiState | Intent | SideEffect | Constructor |
 |-----------|---------|--------|------------|------------|
 | `HomeViewModel` | `HomeUiState` (Loading/Success/Error) | — | — | `(GetNewsUseCase, GetHeartRateHistoryUseCase)` |
-| `DashboardViewModel` | `DashboardUiState(stats, isLoading)` | `Unit` | `Unit` | `(GetHeartRateStatsUseCase)` |
-| `HistoryViewModel` | `HistoryUiState(isLoading, records, isEmpty)` | `HistoryIntent.DeleteRecord(id)` | `Unit` | `(GetHeartRateHistoryUseCase, DeleteHeartRateRecordUseCase)` |
-| `AddRecordViewModel` | `AddRecordUiState(bpm, bodyState, note, isLoading, errorMessage)` | `UpdateBpm/UpdateBodyState/UpdateNote/SaveRecord/ClearError` | `NavigateBack/NavigateToResult(bpm)/ShowSnackbar(message)` | `(AddHeartRateRecordUseCase)` |
+| `DashboardViewModel` | `DashboardUiState(data: DataState<DashboardData>)` | `Unit` | `Unit` | `(GetDashboardDataUseCase)` |
+| `HistoryViewModel` | `HistoryUiState(data: DataState<List<HeartRateRecord>>, deleteState: DataState<Long>)` | `HistoryIntent.DeleteRecord(id)` | `Unit` | `(GetHeartRateHistoryUseCase, DeleteHeartRateRecordUseCase)` |
+| `AddRecordViewModel` | `AddRecordUiState(bpm, bodyState, note, saveState: DataState<Long>, fieldErrors)` | `UpdateBpm/UpdateBodyState/UpdateNote/SaveRecord/ClearError` | `NavigateBack/NavigateToResult(recordId)/ShowSnackbar(message)` | `(AddHeartRateRecordUseCase)` |
 | `BloodPressureViewModel` | `BloodPressureUiState(systolic, diastolic, pulse, timestamp, note, isLoading, errorMessage)` + derived `level` | `UpdateSystolic/UpdateDiastolic/UpdatePulse/UpdateTimestamp/UpdateNote/SaveRecord` | `NavigateBack/ShowError(message)` | `(AddBloodPressureRecordUseCase)` |
 | `NewsDetailViewModel` | — | — | — | `(GetNewsDetailUseCase)` |
 
@@ -199,6 +231,16 @@ abstract class BaseViewModel<S, I, E>(initialState: S) : ViewModel() {
 | `ResultScreen` | `result/` | `bpm: Int`, `bodyState: String`, `onGoHome`, `onMeasureAgain` |
 | `FailedScanScreen` | `camera/` | `onTryAgain`, `onGoHome` |
 | `NewsDetailScreen` | `newsdetail/` | `url: String`, `onNavigateBack` |
+
+Typed navigation is defined in `presentation/navigation/`: `MainTab` (Dashboard,
+History, News, Profile), `AppRoute` (Disclaimer, Main(tab), AddHeartRate,
+Result(recordId), plus retained NewsDetail/BloodPressure/Camera/FailedScan routes),
+and `AppNavigator` (StateFlow route with stack-based navigate/back). `ResultViewModel`
+loads a persisted `recordId` and exposes `ResultUiState(data: DataState<HeartRateRecord>)`.
+The App uses `AppRoute.Result.resultViewModelKey()` as a route-specific Koin key so
+successive result records cannot reuse a cached ViewModel. `AddRecordViewModel` keeps a
+successful save locked until `ResetForNewEntry`, which App dispatches on each new Add
+route entry.
 
 **Home UI assets** (`commonMain/composeResources/drawable/`):
 `home_heart_wave.png`, `home_heart.png`, `home_blood_pressure.png`,
@@ -219,24 +261,30 @@ val networkModule = module {
 val dataModule = module {
     single { HeartRateDatabase(driver=get(), HeartRateEntityAdapter=HeartRateEntity.Adapter(measureTypeAdapter=EnumColumnAdapter(), bodyStateAdapter=EnumColumnAdapter())) }
     single<HeartRateRepository> { HeartRateRepositoryImpl(get(), get()) }
+    single<AppMetadataRepository> { AppMetadataRepositoryImpl(get()) }
     single<BloodPressureRepository> { BloodPressureRepositoryImpl(get(), get()) }
     single<NewsRepository> { NewsRepositoryImpl(get()) }
     // ← THÊM Repository mới ở đây
 }
 
 val domainModule = module {
-    factory { AddHeartRateRecordUseCase(get()) }
+    factory { AddHeartRateRecordUseCase(get(), get()) }
     factory { AddBloodPressureRecordUseCase(get()) }
     factory { GetHeartRateHistoryUseCase(get()) }
+    factory { GetHeartRateRecordUseCase(get()) }
     factory { DeleteHeartRateRecordUseCase(get()) }
     factory { GetHeartRateStatsUseCase(get()) }
+    factory { GetDashboardDataUseCase(get(), get()) }
+    factory { SeedDemoHeartRateUseCase(get(), get(), get()) }
     factory { GetNewsUseCase(get()) }
     factory { GetNewsDetailUseCase(get()) }
+    single<Clock> { SystemClock }
     single { provideAppDispatchers() }
     // ← THÊM UseCase mới ở đây
 }
 
 val presentationModule = module {
+    factory { AppStartupCoordinator(get(), get(), get()) }
     factory { HistoryViewModel(get(), get()) }
     factory { AddRecordViewModel(get()) }
     factory { BloodPressureViewModel(get()) }
@@ -249,9 +297,21 @@ val presentationModule = module {
 expect val platformModule: Module   // Android: AndroidSqliteDriver + CameraHeartRateSensorImpl
 ```
 
+### Deterministic time and dashboard data (2026-08-01)
+
+- `domain/utils/Clock.kt` defines `Clock.nowMillis()` and `SystemClock`, which delegates
+  to the existing cross-platform `getCurrentTimeMillis()` expect/actual function.
+- Dashboard aggregation is offline-first over `HeartRateRepository.getAllRecords()`.
+  It derives up to one non-empty `DashboardPoint` per device-local calendar-day bucket
+  using an injected `kotlinx.datetime.TimeZone`, ordered oldest-to-newest, and excludes
+  records outside the injected clock's current seven-day window (including future records).
+- `DemoSeedRepository.seedIfAbsent(...)` coordinates the marker check, all seven inserts,
+  and marker write in one SQLDelight transaction, so concurrent calls serialize and an
+  insert/marker failure rolls back the complete seed.
+
 ---
 
-## 🗺️ Navigation — Screen Enum Thực Tế (App.kt)
+## 🗺️ Navigation — Typed routes (App.kt)
 
 ```kotlin
 enum class Screen {
