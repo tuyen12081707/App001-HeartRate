@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 memory_dir="$repo_root/.memory"
 
 die() { echo "Lỗi: $*" >&2; exit 1; }
@@ -50,4 +50,3 @@ case "$command" in
     die "lệnh không hợp lệ: $command (dùng show, search, decision, context hoặc inbox)"
     ;;
 esac
-

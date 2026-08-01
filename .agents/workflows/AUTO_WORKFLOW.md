@@ -1,6 +1,6 @@
 # 🤖 Tự Động Hóa Workflow (Auto Workflow)
 
-File này định nghĩa quy trình chuẩn mà AI Agent phải TUYỆT ĐỐI tuân thủ khi User yêu cầu: **"Hoàn thành Task và chạy Auto Workflow"**. 
+File này định nghĩa quy trình chuẩn mà AI Agent phải TUYỆT ĐỐI tuân thủ khi User yêu cầu: **"Hoàn thành Task và chạy Auto Workflow"**.
 
 Agent không được hỏi lại, mà phải chạy ngầm các lệnh terminal (sử dụng Run Command) theo đúng thứ tự sau:
 
@@ -13,7 +13,7 @@ Agent không được hỏi lại, mà phải chạy ngầm các lệnh terminal
 * Chạy lệnh `git commit -m "[TICKET-ID] <type>(<scope>): <subject>"` và đảm bảo commit chia nhỏ hợp lý.
 
 ### 3. Tự Động Push Code
-* Chạy lệnh `git push`. 
+* Chạy lệnh `git push`.
 * Nếu lỗi chưa set upstream, tự động chạy `git push --set-upstream origin <tên-nhánh-hiện-tại>`.
 
 ### 4. Báo Cáo và Trả Link Pull Request
@@ -23,4 +23,4 @@ Agent không được hỏi lại, mà phải chạy ngầm các lệnh terminal
 ---
 
 **💡 Hướng dẫn dành cho User (Bạn chỉ cần copy/paste câu này):**
-> *"Tôi đã code xong Task [Tên Task]. Hãy chạy Auto Workflow dựa trên file `agent/AUTO_WORKFLOW.md` để tự dọn dẹp, commit chuẩn GitLab, push lên và tạo sẵn template PR cho tôi!"*
+> *"Tôi đã code xong Task [Tên Task]. Hãy chạy Auto Workflow dựa trên file `.agents/workflows/AUTO_WORKFLOW.md` để tự dọn dẹp, commit chuẩn GitLab, push lên và tạo sẵn template PR cho tôi!"*

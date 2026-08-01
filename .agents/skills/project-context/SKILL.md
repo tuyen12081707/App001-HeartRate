@@ -1,6 +1,6 @@
 ---
 name: project-context
-description: "Bản đồ sống" của dự án App001HeartRate — toàn bộ code thực tế đã tồn tại, class names, function signatures, data flow, và các recipe copy-paste sẵn. Đọc skill này để hiểu ngay context mà không cần khám phá lại codebase. Kích hoạt khi user yêu cầu bất kỳ task nào liên quan đến dự án."
+description: '"Bản đồ sống" của dự án App001HeartRate — toàn bộ code thực tế đã tồn tại, class names, function signatures, data flow, và các recipe copy-paste sẵn. Đọc skill này để hiểu ngay context mà không cần khám phá lại codebase. Kích hoạt khi user yêu cầu bất kỳ task nào liên quan đến dự án.'
 ---
 
 # Project Context — App001HeartRate (Living Summary)

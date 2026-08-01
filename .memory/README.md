@@ -17,10 +17,9 @@ nhạy cảm, thông tin cá nhân, secret hoặc token.
 ## Lệnh nhanh
 
 ```bash
-./agent/memory.sh show
-./agent/memory.sh search "từ khóa"
-./agent/memory.sh decision "Dùng state-based navigation cho app"
-./agent/memory.sh context "Ưu tiên ổn định Android và iOS"
-./agent/memory.sh inbox "Cần xác nhận cách xử lý onboarding"
+./.agents/scripts/memory.sh show
+./.agents/scripts/memory.sh search "từ khóa"
+./.agents/scripts/memory.sh decision "Dùng state-based navigation cho app"
+./.agents/scripts/memory.sh context "Ưu tiên ổn định Android và iOS"
+./.agents/scripts/memory.sh inbox "Cần xác nhận cách xử lý onboarding"
 ```
-

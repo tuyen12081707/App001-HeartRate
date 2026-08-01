@@ -38,7 +38,7 @@ jobs:
           echo "Đang gọi Gemini API để review code..."
           
           # 2. Đọc harness và diff
-          HARNESS=$(cat agent/kmp_pr_reviewer_harness.md)
+          HARNESS=$(cat docs/agent/kmp_pr_reviewer_harness.md)
           DIFF=$(cat mr_changes.diff)
           
           # 3. Tạo Payload JSON cho Gemini API (Dùng jq để escape ký tự đặc biệt an toàn)
