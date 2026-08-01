@@ -68,6 +68,11 @@ CREATE TABLE BloodPressureEntity (
     timestamp INTEGER NOT NULL,
     note TEXT
 );
+
+CREATE TABLE AppMetadataEntity (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
 ```
 
 ### Queries đã có
@@ -76,11 +81,16 @@ CREATE TABLE BloodPressureEntity (
 | `insertRecord` | `INSERT INTO HeartRateEntity(bpm, timestamp, measureType, bodyState, note) VALUES (?, ?, ?, ?, ?)` |
 | `deleteRecord` | `DELETE FROM HeartRateEntity WHERE id = ?` |
 | `getAllRecords` | `SELECT * FROM HeartRateEntity ORDER BY timestamp DESC` |
+| `getRecordById` | `SELECT * FROM HeartRateEntity WHERE id = ?` |
+| `lastInsertRowId` | `SELECT last_insert_rowid()` immediately after an insert on the same connection |
 | `getAverageBpm` | `SELECT AVG(bpm) FROM HeartRateEntity` |
+| `getMetadata` | `SELECT value FROM AppMetadataEntity WHERE key = ?` |
+| `upsertMetadata` | SQLite-compatible `INSERT OR REPLACE` by metadata key |
 | `insertBloodPressureRecord` | `INSERT INTO BloodPressureEntity(systolic, diastolic, pulse, timestamp, note) VALUES (?, ?, ?, ?, ?)` |
 | `getAllBloodPressureRecords` | `SELECT * FROM BloodPressureEntity ORDER BY timestamp DESC` |
 
-**Migration hiện có**: `1.sqm` tạo `BloodPressureEntity` cho database đã cài trước đó.
+**Migration hiện có**: `1.sqm` tạo `BloodPressureEntity`; `2.sqm` tạo
+`AppMetadataEntity` cho database đã cài trước đó.
 
 ---
 
@@ -130,10 +140,16 @@ object BloodPressureInputConstraints // range nhập Systolic/Diastolic/Pulse
 ```kotlin
 // HeartRateRepository.kt
 interface HeartRateRepository {
-    suspend fun insertRecord(record: HeartRateRecord)
+    suspend fun insertRecord(record: HeartRateRecord): Long
+    suspend fun getRecordById(id: Long): HeartRateRecord?
     suspend fun deleteRecord(id: Long)
     fun getAllRecords(): Flow<List<HeartRateRecord>>
     suspend fun getAverageBpm(): Double
+}
+
+interface AppMetadataRepository {
+    suspend fun get(key: String): String?
+    suspend fun put(key: String, value: String)
 }
 
 interface BloodPressureRepository {
