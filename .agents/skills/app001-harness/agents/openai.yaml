@@ -1,0 +1,4 @@
+interface:
+  display_name: "App001 Harness"
+  short_description: "Initialize and audit the Codex project harness"
+  default_prompt: "Dùng $app001-harness để init, review, update SSOT hoặc optimize harness của App001HeartRate theo tier phù hợp."

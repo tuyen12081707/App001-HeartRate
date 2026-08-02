@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "project": "App001HeartRate",
+  "defaultTier": "standard",
+  "handoffLanguage": "English",
+  "skillsIndex": ".agents/skills/SKILLS_INDEX.md",
+  "sourcesOfTruth": [
+    "AGENTS.md",
+    ".memory/context.md",
+    ".memory/decisions.md",
+    "BRAINSTORM.md",
+    ".agents/skills/project-context/SKILL.md"
+  ],
+  "pillars": {
+    "memory": {
+      "status": "enabled",
+      "path": ".memory"
+    },
+    "permissions": {
+      "status": "manual",
+      "path": "AGENTS.md"
+    },
+    "hooks": {
+      "status": "opt-in",
+      "path": ".githooks"
+    },
+    "mcp": {
+      "status": "not-configured",
+      "path": ".agents/harness"
+    },
+    "agents": {
+      "status": "skill-driven",
+      "path": ".agents/skills"
+    },
+    "ssot": {
+      "status": "enabled",
+      "path": ".agents/skills/SKILLS_INDEX.md"
+    },
+    "observability": {
+      "status": "manual",
+      "path": ".agents/harness"
+    },
+    "skills": {
+      "status": "enabled",
+      "path": ".agents/skills"
+    }
+  },
+  "automation": {
+    "autoCommit": false,
+    "autoPush": false,
+    "overwriteExistingFiles": false
+  },
+  "verification": {
+    "commonTest": "./gradlew :shared:testAndroidHostTest",
+    "androidCompile": "./gradlew :shared:compileKotlinAndroid",
+    "iosCompile": "./gradlew :shared:compileKotlinIosSimulatorArm64",
+    "androidApp": "./gradlew :androidApp:assembleDebug"
+  }
+}

@@ -5,6 +5,7 @@ Read the matching `SKILL.md` only after selecting the task area below.
 
 | Skill | Use when | Read with |
 |---|---|---|
+| `app001-harness` | Initializing, reviewing, updating, or optimizing the project harness | `.agents/harness/config.json` and the selected tier file |
 | `app001-delivery-workflow` | Any implementation, fix, review, commit, or shipping task | `AGENTS.md`, then this index |
 | `kmp-development` | `commonMain`, `androidMain`, `iosMain`, Compose, Koin, SQLDelight, Ktor, navigation, or tests | `project-context` only for affected code |
 | `project-context` | You need existing class names, signatures, data flow, DI, or navigation facts | The specific section/file relevant to the task |
